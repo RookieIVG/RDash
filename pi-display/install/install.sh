@@ -40,6 +40,8 @@ fi
 step "Installiere benötigte Pakete"
 apt-get update -qq
 apt-get install -y -qq python3 bluez curl >/dev/null
+# wlr-randr dreht den Bildschirm für das Hochformat ([ui] rotation)
+apt-get install -y -qq wlr-randr >/dev/null 2>&1 || warn "wlr-randr nicht installierbar – Drehung nur über die Bildschirmkonfiguration des Desktops möglich."
 if ! command -v chromium >/dev/null && ! command -v chromium-browser >/dev/null; then
   apt-get install -y -qq chromium >/dev/null || apt-get install -y -qq chromium-browser >/dev/null
 fi
