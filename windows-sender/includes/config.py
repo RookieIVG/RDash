@@ -39,6 +39,23 @@ _DEFAULTS = {
         "hide_private": "true",
         "restrict_date_format": "%d.%m.%Y %H:%M",
     },
+    "weather": {
+        "enabled": "false",
+        "place": "Graz",
+        "latitude": "47.07",
+        "longitude": "15.44",
+        "refresh_minutes": "15",
+    },
+    "news": {
+        "enabled": "false",
+        "feeds": "https://rss.orf.at/news.xml",
+        "max_headlines": "10",
+        "refresh_minutes": "15",
+    },
+    "internet": {
+        "proxy": "",
+        "timeout": "15",
+    },
     "logging": {
         "file": r"%LOCALAPPDATA%\InfoDisplay\logs\sender.log",
         "level": "INFO",
@@ -73,6 +90,17 @@ class SenderConfig:
     hide_subjects: bool = False
     hide_private: bool = True
     restrict_date_format: str = "%d.%m.%Y %H:%M"
+    weather_enabled: bool = False
+    place: str = "Graz"
+    latitude: float = 47.07
+    longitude: float = 15.44
+    weather_refresh_minutes: float = 15
+    news_enabled: bool = False
+    feeds: list = field(default_factory=list)
+    max_headlines: int = 10
+    news_refresh_minutes: float = 15
+    proxy: str = ""
+    web_timeout: float = 15
     log_file: str = ""
     log_level: str = "INFO"
     log_max_bytes: int = 2_000_000
@@ -117,12 +145,25 @@ def load_config(path=None, require_link=True):
         hide_subjects=cp.getboolean("calendar", "hide_subjects"),
         hide_private=cp.getboolean("calendar", "hide_private"),
         restrict_date_format=cp.get("calendar", "restrict_date_format"),
+        weather_enabled=cp.getboolean("weather", "enabled"),
+        place=cp.get("weather", "place").strip()[:40],
+        latitude=cp.getfloat("weather", "latitude"),
+        longitude=cp.getfloat("weather", "longitude"),
+        weather_refresh_minutes=max(5.0, cp.getfloat("weather", "refresh_minutes")),
+        news_enabled=cp.getboolean("news", "enabled"),
+        feeds=[u.strip() for u in cp.get("news", "feeds").replace("\n", ",").split(",") if u.strip()],
+        max_headlines=max(1, min(30, cp.getint("news", "max_headlines"))),
+        news_refresh_minutes=max(5.0, cp.getfloat("news", "refresh_minutes")),
+        proxy=cp.get("internet", "proxy").strip(),
+        web_timeout=max(3.0, cp.getfloat("internet", "timeout")),
         log_file=os.path.expandvars(cp.get("logging", "file")),
         log_level=cp.get("logging", "level"),
         log_max_bytes=cp.getint("logging", "max_bytes"),
         log_backup_count=cp.getint("logging", "backup_count"),
     )
 
+    if not (-90 <= cfg.latitude <= 90 and -180 <= cfg.longitude <= 180):
+        raise ValueError("weather.latitude/longitude ungültig")
     if not require_link:
         return cfg
     if cfg.transport not in ("bluetooth", "tcp"):

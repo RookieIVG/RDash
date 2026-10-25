@@ -50,7 +50,8 @@ def main():
 
     state = DisplayState(
         app_info={"name": "InfoDisplay", "version": version},
-        ui={"show_seconds": cfg.ui_show_seconds, "layout": cfg.ui_layout, "rotation": cfg.ui_rotation},
+        ui={"show_seconds": cfg.ui_show_seconds, "layout": cfg.ui_layout, "rotation": cfg.ui_rotation,
+            "news_seconds": cfg.ui_news_seconds},
     )
 
     try:

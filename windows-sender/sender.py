@@ -1,7 +1,8 @@
 """InfoDisplay – Windows-Sender
 
-Liest die laufende Musik (Windows-Medienschnittstelle) und die nächsten
-Outlook-Termine und überträgt sie per Bluetooth an den Raspberry Pi.
+Liest die laufende Musik (Windows-Medienschnittstelle), die nächsten
+Outlook-Termine sowie optional Wetter und Schlagzeilen (Internet) und
+überträgt alles per Bluetooth an den Raspberry Pi.
 
 Start:   pythonw.exe sender.py [--config PFAD]
 Test:    python.exe  sender.py --test      (zeigt die Daten nur an)
@@ -76,7 +77,7 @@ class LinkManager:
             backoff, last_error = 2, None
             self.generation += 1
             self.connected.set()
-            for key in ("cover", "calendar"):
+            for key in ("cover", "calendar", "weather", "news"):
                 if key in self._snapshot:
                     await self.publish(self._snapshot[key])
 
@@ -155,6 +156,31 @@ async def calendar_loop(cfg, link):
         await asyncio.sleep(cfg.refresh_minutes * 60)
 
 
+async def weather_loop(cfg, link):
+    from includes.web_feeds import fetch_weather
+    while True:
+        try:
+            data = await asyncio.to_thread(fetch_weather, cfg)
+            await link.publish(protocol.weather(data), remember="weather")
+            log.debug("Wetter gesendet: %s °C, Code %s", data.get("temp"), data.get("code"))
+        except Exception as exc:
+            log.warning("Wetter nicht abrufbar: %s", exc)
+        await asyncio.sleep(cfg.weather_refresh_minutes * 60)
+
+
+async def news_loop(cfg, link):
+    from includes.web_feeds import fetch_news
+    while True:
+        try:
+            items = await asyncio.to_thread(fetch_news, cfg)
+            if items is not None:
+                await link.publish(protocol.news(items), remember="news")
+                log.debug("%d Schlagzeilen gesendet", len(items))
+        except Exception as exc:
+            log.warning("Schlagzeilen nicht abrufbar: %s", exc)
+        await asyncio.sleep(cfg.news_refresh_minutes * 60)
+
+
 async def heartbeat_loop(cfg, link):
     while True:
         await asyncio.sleep(cfg.heartbeat_seconds)
@@ -170,6 +196,10 @@ async def run(cfg, version):
         tasks.append(media_loop(cfg, link))
     if cfg.calendar_enabled:
         tasks.append(calendar_loop(cfg, link))
+    if cfg.weather_enabled:
+        tasks.append(weather_loop(cfg, link))
+    if cfg.news_enabled and cfg.feeds:
+        tasks.append(news_loop(cfg, link))
     try:
         await asyncio.gather(*tasks)
     finally:
@@ -190,6 +220,12 @@ async def run_test(cfg):
         events = await asyncio.get_running_loop().run_in_executor(
             ThreadPoolExecutor(max_workers=1, initializer=_com_init), OutlookCalendar(cfg).fetch)
         print("KALENDER:", json.dumps(events, ensure_ascii=False, indent=2))
+    if cfg.weather_enabled:
+        from includes.web_feeds import fetch_weather
+        print("WETTER:", json.dumps(fetch_weather(cfg), ensure_ascii=False, indent=2))
+    if cfg.news_enabled:
+        from includes.web_feeds import fetch_news
+        print("SCHLAGZEILEN:", json.dumps(fetch_news(cfg), ensure_ascii=False, indent=2))
 
 
 def main():

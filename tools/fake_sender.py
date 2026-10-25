@@ -50,6 +50,7 @@ def main():
     parser.add_argument("--token", required=True)
     parser.add_argument("--seconds", type=int, default=30, help="Wie lange Daten gesendet werden")
     parser.add_argument("--no-calendar", action="store_true", help="Keine Kalenderdaten senden (wie ohne Outlook)")
+    parser.add_argument("--no-web", action="store_true", help="Kein Wetter und keine Schlagzeilen senden")
     args = parser.parse_args()
 
     if args.tcp:
@@ -80,6 +81,16 @@ def main():
             {"subject": "Schulung Datenschutz", "location": "Online (Teams)",
              "start": (now + timedelta(days=1)).replace(hour=9, minute=0).strftime(fmt),
              "end": (now + timedelta(days=1)).replace(hour=10, minute=30).strftime(fmt), "all_day": False},
+        ]}})
+
+    if not args.no_web:
+        send(sock, {"type": "weather", "data": {"place": "Graz", "temp": 12.4, "code": 2, "is_day": True,
+                                                 "t_max": 15.1, "t_min": 6.3}})
+        send(sock, {"type": "news", "data": {"items": [
+            {"title": "Testschlagzeile: Neue Straßenbahnlinie in Graz eröffnet", "source": "Testquelle"},
+            {"title": "Zweite Schlagzeile mit etwas längerem Text, damit man sieht, wie lange Überschriften "
+                      "auf der Anzeige gekürzt werden", "source": "Testquelle"},
+            {"title": "Dritte Schlagzeile", "source": "Andere Quelle"},
         ]}})
 
     duration = 214_000

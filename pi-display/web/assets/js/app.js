@@ -215,6 +215,75 @@
     });
   }
 
+  // ---------------------------------------------------------------- Wetter (vom PC, Open-Meteo)
+  // WMO-Wettercodes -> [Icon Tag, Icon Nacht, Text]
+  var WEATHER = [
+    [[0], "sun", "moon-stars", "Klar"],
+    [[1], "sun", "moon", "Überwiegend klar"],
+    [[2], "cloud-sun", "cloud-moon", "Teilweise bewölkt"],
+    [[3], "clouds", "clouds", "Bedeckt"],
+    [[45, 48], "cloud-fog", "cloud-fog", "Nebel"],
+    [[51, 53, 55, 56, 57], "cloud-drizzle", "cloud-drizzle", "Nieselregen"],
+    [[61, 80], "cloud-rain", "cloud-rain", "Leichter Regen"],
+    [[63, 66, 81], "cloud-rain", "cloud-rain", "Regen"],
+    [[65, 67, 82], "cloud-rain-heavy", "cloud-rain-heavy", "Starker Regen"],
+    [[71, 73, 75, 77, 85, 86], "cloud-snow", "cloud-snow", "Schnee"],
+    [[95, 96, 99], "cloud-lightning-rain", "cloud-lightning-rain", "Gewitter"]
+  ];
+  var MAX_AGE_MS = 3 * 3600 * 1000;   // ältere Daten (PC lange offline) nicht mehr zeigen
+
+  function fresh(part) {
+    return part && state.link && state.link.connected && serverNow() - part.received_ms < MAX_AGE_MS;
+  }
+
+  function deg(value) { return Math.round(value) + "°"; }
+
+  function renderWeather() {
+    var w = state.weather;
+    $("weather").hidden = !fresh(w);
+    if (!fresh(w)) { return; }
+    var entry = WEATHER.filter(function (e) { return e[0].indexOf(w.code) !== -1; })[0] || [[], "cloud", "cloud", ""];
+    $("weather-icon").className = "bi bi-" + (w.is_day ? entry[1] : entry[2]);
+    setText("weather-temp", deg(w.temp));
+    var parts = [entry[3]];
+    if (w.t_max !== null && w.t_min !== null) { parts.push(deg(w.t_min) + " / " + deg(w.t_max)); }
+    if (w.place) { parts.push(w.place); }
+    setText("weather-text", parts.filter(Boolean).join(" · "));
+  }
+
+  // ---------------------------------------------------------------- Schlagzeilen (vom PC, RSS)
+  var newsIndex = 0;
+  var newsShownAt = 0;
+  var newsStamp = null;      // received_ms der angezeigten Schlagzeilen
+
+  function tickNews(force) {
+    var news = state && state.news;
+    var items = fresh(news) ? news.items : [];
+    $("news").hidden = !items.length;
+    document.body.classList.toggle("has-news", items.length > 0);
+    if (!items.length) { return; }
+    if (news.received_ms !== newsStamp) {   // neue Schlagzeilen -> von vorne beginnen
+      newsStamp = news.received_ms;
+      newsIndex = 0;
+      force = true;
+    }
+    var seconds = (state.ui && state.ui.news_seconds) || 12;
+    if (!force && Date.now() - newsShownAt < seconds * 1000) { return; }
+    if (!force) { newsIndex += 1; }
+    newsIndex = newsIndex % items.length;
+    newsShownAt = Date.now();
+    var line = $("news").querySelector(".news-line");
+    line.classList.remove("is-visible");
+    // kurz ausblenden, dann neue Schlagzeile einblenden
+    setTimeout(function () {
+      var item = items[newsIndex % items.length];
+      if (!item) { return; }
+      setText("news-source", item.source || "");
+      setText("news-title", item.title);
+      line.classList.add("is-visible");
+    }, force ? 0 : 400);
+  }
+
   // ---------------------------------------------------------------- Datenempfang
   function applyState(snapshot) {
     state = snapshot;
@@ -224,6 +293,8 @@
     renderIdle();
     renderMedia();
     renderCalendar();
+    renderWeather();
+    tickNews(false);
   }
 
   function markUnreachable() {
@@ -264,7 +335,7 @@
     tickClock();
     setInterval(tickClock, 1000);
     setInterval(tickProgress, 250);
-    setInterval(function () { if (state) { renderCalendar(); } }, 1000);
+    setInterval(function () { if (state) { renderCalendar(); tickNews(false); } }, 1000);
     connect();
   });
 })();

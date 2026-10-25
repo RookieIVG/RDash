@@ -14,6 +14,7 @@ PROTOCOL_VERSION = 1
 MAX_TEXT = 300
 MAX_EVENTS = 50
 MAX_COVER_BYTES = 2 * 1024 * 1024
+MAX_HEADLINES = 30
 _ISO_LOCAL = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$")
 _HEX_ID = re.compile(r"^[0-9a-f]{8,64}$")
 _STATUSES = {"playing", "paused", "stopped"}
@@ -95,6 +96,44 @@ def parse_cover(data):
     else:
         raise ProtocolError("Cover ist kein JPEG/PNG")
     return cover_id, mime, raw
+
+
+def _num(value, low, high):
+    """Zahl im Bereich oder None (z. B. fehlender Wetterwert)."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    if value != value or not low <= value <= high:   # NaN oder außerhalb
+        return None
+    return round(float(value), 1)
+
+
+def parse_weather(data):
+    if not isinstance(data, dict):
+        raise ProtocolError("weather.data fehlt")
+    temp = _num(data.get("temp"), -80, 70)
+    if temp is None:
+        raise ProtocolError("weather.temp fehlt oder ungültig")
+    return {
+        "place": clean_text(data.get("place"), 40),
+        "temp": temp,
+        "code": _int(data.get("code"), 0, 99),
+        "is_day": bool(data.get("is_day", True)),
+        "t_max": _num(data.get("t_max"), -80, 70),
+        "t_min": _num(data.get("t_min"), -80, 70),
+    }
+
+
+def parse_news(data):
+    if not isinstance(data, dict) or not isinstance(data.get("items"), list):
+        raise ProtocolError("news.items fehlt")
+    items = []
+    for item in data["items"][:MAX_HEADLINES]:
+        if not isinstance(item, dict):
+            continue
+        title = clean_text(item.get("title"), 200)
+        if title:
+            items.append({"title": title, "source": clean_text(item.get("source"), 40)})
+    return items
 
 
 def parse_calendar(data):

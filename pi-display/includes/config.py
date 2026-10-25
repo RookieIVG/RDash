@@ -37,6 +37,7 @@ _DEFAULTS = {
     },
     "ui": {
         "show_seconds": "true",
+        "news_seconds": "12",
         "layout": "auto",
         "rotation": "0",
     },
@@ -75,6 +76,7 @@ class ReceiverConfig:
     web_port: int = 8080
     web_root: str = "/opt/infodisplay/web"
     ui_show_seconds: bool = True
+    ui_news_seconds: int = 12
     ui_layout: str = "auto"
     ui_rotation: int = 0
     tcp_test_port: int = 0
@@ -115,6 +117,7 @@ def load_config(path=None):
         web_port=cp.getint("web", "port"),
         web_root=os.path.realpath(cp.get("web", "web_root").strip()),
         ui_show_seconds=cp.getboolean("ui", "show_seconds"),
+        ui_news_seconds=max(4, min(120, cp.getint("ui", "news_seconds"))),
         ui_layout=layout if layout in ("auto", "landscape", "portrait") else "auto",
         ui_rotation=cp.getint("ui", "rotation"),
         tcp_test_port=cp.getint("debug", "tcp_test_port"),

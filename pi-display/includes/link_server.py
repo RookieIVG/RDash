@@ -240,6 +240,12 @@ class LinkServer:
             events = protocol.parse_calendar(message.get("data"))
             self.state.set_calendar(events)
             log.debug("%d Termine empfangen", len(events))
+        elif kind == "weather":
+            self.state.set_weather(protocol.parse_weather(message.get("data")))
+        elif kind == "news":
+            items = protocol.parse_news(message.get("data"))
+            self.state.set_news(items)
+            log.debug("%d Schlagzeilen empfangen", len(items))
         elif kind == "ping":
             self.state.touch()
         elif kind == "bye":
