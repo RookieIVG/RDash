@@ -175,10 +175,11 @@
     if (signature === lastCalendarRender) { return; }
     lastCalendarRender = signature;
 
+    eventCount = upcoming.length;
     list.textContent = "";
-
-    // Keine (weiteren) Termine oder kein Kalender: Bereich ganz ausblenden, keine Meldung
-    document.body.classList.toggle("no-events", !upcoming.length);
+    renderNextEvent(upcoming, now);
+    arrange();
+    // Keine (weiteren) Termine oder kein Kalender: Bereich bleibt ausgeblendet, keine Meldung
     if (!upcoming.length) { return; }
 
     var lastDay = null;
@@ -213,6 +214,52 @@
       li.appendChild(body);
       list.appendChild(li);
     });
+  }
+
+  // Kleine Leiste unten (wenn die Schlagzeilen groß sind): laufender bzw. nächster Termin
+  function renderNextEvent(upcoming, now) {
+    var x = upcoming[0];
+    if (!x) { return; }
+    var running = x.start <= now;
+    var when = running ? "Jetzt" : dayLabel(x.start, now) + (x.e.all_day ? "" : " " + timeText(x.start));
+    if (running && !x.e.all_day) { when += " bis " + timeText(x.end); }
+    setText("next-when", when);
+    setText("next-subject", x.e.subject);
+    setText("next-location", x.e.location || "");
+    $("next-location").hidden = !x.e.location;
+    setText("next-more", upcoming.length > 1 ? "+" + (upcoming.length - 1) + " weitere" : "");
+  }
+
+  // ---------------------------------------------------------------- Anordnung: was ist groß, was klein?
+  // [ui] focus = calendar | news. Fehlt der Inhalt für den großen Bereich, übernimmt der andere.
+  var eventCount = 0;
+
+  function newsItems() {
+    var news = state && state.news;
+    return fresh(news) ? news.items : [];
+  }
+
+  function arrange() {
+    if (!state) { return; }
+    var hasNews = newsItems().length > 0;
+    var hasEvents = eventCount > 0;
+    var focus = (state.ui && state.ui.focus) === "news" ? "news" : "calendar";
+    if (focus === "news" && !hasNews) { focus = "calendar"; }
+    if (focus === "calendar" && !hasEvents && hasNews) { focus = "news"; }
+
+    var bigCalendar = focus === "calendar" && hasEvents;
+    var bigNews = focus === "news" && hasNews;
+    var smallNews = focus === "calendar" && hasNews;
+    var smallCalendar = focus === "news" && hasEvents;
+
+    var wasBigNews = !$("headlines").hidden;
+    $("calendar").hidden = !bigCalendar;
+    $("headlines").hidden = !bigNews;
+    $("news").hidden = !smallNews;
+    $("next-event").hidden = !smallCalendar;
+    document.body.classList.toggle("no-events", !bigCalendar && !bigNews);   // kein großer Bereich
+    document.body.classList.toggle("has-news", smallNews || smallCalendar);  // Leiste unten
+    if (bigNews && !wasBigNews) { renderHeadlines(false); }
   }
 
   // ---------------------------------------------------------------- Wetter (vom PC, Open-Meteo)
@@ -251,24 +298,36 @@
     setText("weather-text", parts.filter(Boolean).join(" · "));
   }
 
-  // ---------------------------------------------------------------- Schlagzeilen (vom PC, RSS)
+  // ---------------------------------------------------------------- Schlagzeilen (vom PC, RSS/Atom)
   var newsIndex = 0;
   var newsShownAt = 0;
   var newsStamp = null;      // received_ms der angezeigten Schlagzeilen
+  var pageStart = 0;         // Großansicht: erste Schlagzeile der aktuellen Seite
+  var pageCount = 0;         // Großansicht: Anzahl Schlagzeilen, die auf die Seite passen
+  var pageShownAt = 0;
 
-  function tickNews(force) {
-    var news = state && state.news;
-    var items = fresh(news) ? news.items : [];
-    $("news").hidden = !items.length;
-    document.body.classList.toggle("has-news", items.length > 0);
-    if (!items.length) { return; }
-    if (news.received_ms !== newsStamp) {   // neue Schlagzeilen -> von vorne beginnen
+  function tickNews() {
+    if (!state) { return; }
+    var items = newsItems();
+    var news = state.news;
+    var changed = items.length && news.received_ms !== newsStamp;
+    if (changed) {                            // neue Schlagzeilen -> von vorne beginnen
       newsStamp = news.received_ms;
       newsIndex = 0;
-      force = true;
+      pageStart = 0;
     }
-    var seconds = (state.ui && state.ui.news_seconds) || 12;
-    if (!force && Date.now() - newsShownAt < seconds * 1000) { return; }
+    arrange();
+    if (!items.length) { return; }
+    var ui = state.ui || {};
+    if (!$("news").hidden) { tickTicker(items, changed, (ui.news_seconds || 12) * 1000); }
+    if (!$("headlines").hidden && (changed || Date.now() - pageShownAt >= (ui.news_page_seconds || 30) * 1000)) {
+      renderHeadlines(!changed);
+    }
+  }
+
+  // Klein: eine Schlagzeile nach der anderen in der Leiste unten
+  function tickTicker(items, force, interval) {
+    if (!force && Date.now() - newsShownAt < interval) { return; }
     if (!force) { newsIndex += 1; }
     newsIndex = newsIndex % items.length;
     newsShownAt = Date.now();
@@ -284,6 +343,32 @@
     }, force ? 0 : 400);
   }
 
+  // Groß: so viele Schlagzeilen (mit Text) wie Platz haben, seitenweise weiterblättern
+  function renderHeadlines(advance) {
+    var items = newsItems();
+    var list = $("headlines-list");
+    if (!items.length) { return; }
+    if (advance && pageCount < items.length) { pageStart = (pageStart + pageCount) % items.length; }
+    if (pageCount >= items.length) { pageStart = 0; }
+    pageShownAt = Date.now();
+    list.textContent = "";
+    pageCount = 0;
+    for (var n = 0; n < items.length; n++) {
+      var item = items[(pageStart + n) % items.length];
+      var li = el("li", "headline");
+      if (item.source) { li.appendChild(el("div", "headline-source", item.source)); }
+      li.appendChild(el("div", "headline-title", item.title));
+      if (item.text) { li.appendChild(el("div", "headline-text", item.text)); }
+      list.appendChild(li);
+      if (list.scrollHeight > list.clientHeight + 1) {   // passt nicht mehr -> wieder weg
+        if (pageCount > 0) { list.removeChild(li); }
+        else { pageCount = 1; }
+        break;
+      }
+      pageCount += 1;
+    }
+  }
+
   // ---------------------------------------------------------------- Datenempfang
   function applyState(snapshot) {
     state = snapshot;
@@ -294,7 +379,7 @@
     renderMedia();
     renderCalendar();
     renderWeather();
-    tickNews(false);
+    tickNews();
   }
 
   function markUnreachable() {
@@ -331,11 +416,14 @@
     if (/[?&]kiosk=1\b/.test(window.location.search)) { document.body.classList.add("kiosk"); }
     applyLayout();
     renderIdle();
-    window.addEventListener("resize", applyLayout);
+    window.addEventListener("resize", function () {
+      applyLayout();
+      if (!$("headlines").hidden) { renderHeadlines(false); }
+    });
     tickClock();
     setInterval(tickClock, 1000);
     setInterval(tickProgress, 250);
-    setInterval(function () { if (state) { renderCalendar(); tickNews(false); } }, 1000);
+    setInterval(function () { if (state) { renderCalendar(); tickNews(); } }, 1000);
     connect();
   });
 })();

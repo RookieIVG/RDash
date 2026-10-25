@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen am InfoDisplay. Format nach [Keep a Changelog](htt
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 Neue Einträge werden mit `python tools/bump_version.py` automatisch erzeugt.
 
+## [1.5.0] – 2026-10-25
+
+### Hinzugefügt
+- Einstellung [ui] focus am Pi: Termine oder Schlagzeilen groß; das jeweils andere als Leiste unten (nächster Termin bzw. wechselnde Schlagzeile). Fehlt Inhalt, übernimmt automatisch der andere Bereich
+- Schlagzeilen größer; Großansicht mit Quelle und Kurztext, blättert seitenweise ([ui] news_page_seconds)
+- Sender: Kurztext aus RSS (description) und Atom (summary/content), HTML wird entfernt ([news] with_text)
+
 ## [1.4.0] – 2026-10-25
 
 ### Hinzugefügt

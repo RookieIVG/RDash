@@ -46,13 +46,25 @@
         </p>
       </section>
 
-      <section class="block block-calendar" aria-label="Termine">
+      <section id="calendar" class="block block-calendar" aria-label="Termine" hidden>
         <ul id="calendar-list" class="events"></ul>
+      </section>
+
+      <section id="headlines" class="block block-headlines" aria-label="Schlagzeilen" hidden>
+        <ul id="headlines-list" class="headlines"></ul>
       </section>
     </div>
 
-    <section id="news" class="block block-news" aria-label="Schlagzeilen" hidden>
+    <section id="news" class="block block-news" aria-label="Schlagzeile" hidden>
       <p class="news-line"><span id="news-source" class="news-source"></span><span id="news-title" class="news-title"></span></p>
+    </section>
+
+    <section id="next-event" class="block block-news" aria-label="Nächster Termin" hidden>
+      <p class="news-line is-visible">
+        <span id="next-when" class="news-source"></span>
+        <span class="news-title"><span id="next-subject" class="next-subject"></span><span id="next-location" class="next-location"></span></span>
+        <span id="next-more" class="next-more"></span>
+      </p>
     </section>
   </main>
 </body>

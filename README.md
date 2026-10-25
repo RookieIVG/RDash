@@ -323,10 +323,31 @@ Prüfen, ob der PC die Daten bekommt: `sender.py --test` (Abschnitt 5, Schritt 6
 | Anzeige | Wo |
 |---|---|
 | Wetter | unter dem Datum: Symbol, Temperatur, Beschreibung, Tiefst-/Höchstwert, Ort (Daten: [Open-Meteo](https://open-meteo.com), kostenlos, ohne Anmeldung) |
-| Schlagzeilen | unten am Bildschirm, eine nach der anderen (Wechsel alle `news_seconds` Sekunden, Einstellung am Pi) |
+| Schlagzeilen | je nach `[ui] focus` am Pi: als Leiste unten (eine nach der anderen) oder groß als Liste mit Kurztext – siehe unten |
 
 Wetter und Schlagzeilen werden alle 15 Minuten aktualisiert und nur angezeigt, solange der PC verbunden ist
 (und die Daten nicht älter als 3 Stunden sind). Im Ruhemodus (Hochformat ohne Verbindung) bleibt es bei Uhr und Datum.
+
+#### Kalender oder Schlagzeilen groß? (`[ui] focus` am Pi)
+
+| `focus` | Großer Bereich | Leiste unten |
+|---|---|---|
+| `calendar` (Standard) | Termine | Schlagzeilen, eine nach der anderen (Wechsel alle `news_seconds` s) |
+| `news` | Schlagzeilen mit Quelle und Kurztext, so viele wie Platz haben – blättert alle `news_page_seconds` s weiter | laufender bzw. nächster Termin („Jetzt bis 11:45 · Jour fixe“, „+2 weitere“) |
+
+Fehlt der Inhalt für den großen Bereich, übernimmt automatisch der andere (z. B. `focus = calendar`, aber heute
+keine Termine → Schlagzeilen groß). Einstellen in `/etc/infodisplay/config.ini`:
+```ini
+[ui]
+focus = news
+news_page_seconds = 30
+```
+danach `sudo systemctl restart infodisplay`.
+
+Den Kurztext liefert der Feed (RSS: `description`, Atom: `summary`/`content`). Abschalten am PC mit
+`[news] with_text = false`.
+
+**Unterstützte Feed-Formate:** RSS 2.0, RSS 1.0 (RDF) und Atom.
 
 **Feed-Adressen finden:** Viele Nachrichtenseiten nennen ihren RSS-Feed im Seitenfuß („RSS“). Beispiele:
 `https://rss.orf.at/news.xml` (ORF News), `https://rss.orf.at/steiermark.xml` (ORF Steiermark),
@@ -362,7 +383,9 @@ dann `rotation = 0` lassen.
 | security | `http_rate_per_sec` | 20 | Rate-Limit Webserver |
 | web | `host` / `port` | 127.0.0.1 / 8080 | Webserver nur lokal |
 | ui | `show_seconds` | true | Sekunden in der Uhr |
-| ui | `news_seconds` | 12 | Sekunden bis zur nächsten Schlagzeile |
+| ui | `focus` | calendar | Was groß angezeigt wird: `calendar` oder `news` (Abschnitt 7) |
+| ui | `news_seconds` | 12 | Leiste unten: Sekunden bis zur nächsten Schlagzeile |
+| ui | `news_page_seconds` | 30 | Schlagzeilen groß: Sekunden bis zum Weiterblättern |
 | ui | `layout` | auto | `auto` (nach Bildschirmform), `landscape` oder `portrait` – siehe Abschnitt 7 |
 | ui | `rotation` | 0 | Bildschirm drehen: `0`, `90`, `180`, `270` (Hochformat: `90` oder `270`) |
 | debug | `tcp_test_port` | 0 | TCP-Testzugang (nur zum Testen) |
@@ -391,6 +414,7 @@ Nach Änderungen: `sudo systemctl restart infodisplay`
 | news | `enabled` | false | Schlagzeilen abrufen |
 | news | `feeds` | ORF News | RSS-/Atom-Adressen, kommagetrennt |
 | news | `max_headlines` / `refresh_minutes` | 10 / 15 | Anzahl (abwechselnd aus allen Feeds), Aktualisierung |
+| news | `with_text` | true | Kurztext der Meldung mitsenden (sichtbar bei `focus = news`) |
 | internet | `proxy` / `timeout` | leer / 15 | Proxy (leer = Windows-Einstellung), Zeitlimit je Abruf |
 | logging | `file` / `level` | `%LOCALAPPDATA%\InfoDisplay\logs\sender.log` / INFO | Zentrales Log |
 
@@ -550,7 +574,7 @@ Eine JSON-Nachricht pro Zeile (UTF-8, abgeschlossen mit `\n`), Protokollversion 
 | PC → Pi | `cover` | `id` (Hash), `mime`, `b64` – nur bei Titelwechsel |
 | PC → Pi | `calendar` | `events[]` mit `subject`, `location`, `start`, `end` (lokal, `YYYY-MM-DDTHH:MM`), `all_day` |
 | PC → Pi | `weather` | `place`, `temp`, `code` (WMO-Wettercode), `is_day`, `t_max`, `t_min` – optional, alle 15 min |
-| PC → Pi | `news` | `items[]` mit `title`, `source` (max. 30) – optional, alle 15 min |
+| PC → Pi | `news` | `items[]` mit `title`, `source`, `text` (Kurztext, optional) – max. 30, alle 15 min |
 | PC → Pi | `ping` | Lebenszeichen alle 20 s |
 | PC → Pi | `bye` | Sender beendet sich |
 

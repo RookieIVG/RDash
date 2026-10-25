@@ -4,7 +4,9 @@ Der Raspberry Pi hat keinen Internetzugang – deshalb holt der PC die Daten
 und schickt sie per Bluetooth weiter. Nur Standardbibliothek (urllib, ElementTree).
 """
 
+import html
 import json
+import re
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -76,22 +78,42 @@ def _child_text(node, name):
     return ""
 
 
-def parse_feed(data, max_items):
-    """Liefert (Quellenname, [Schlagzeilen]) für RSS 2.0, RSS 1.0 (RDF) und Atom."""
+_TAGS = re.compile(r"<[^>]*>")
+MAX_TEXT = 300
+
+
+def plain_text(value, limit=MAX_TEXT):
+    """HTML aus Feed-Beschreibungen entfernen, Leerraum glätten, an Wortgrenze kürzen."""
+    # zweimal: Feeds liefern HTML teils roh, teils als &lt;p&gt; maskiert
+    text = " ".join(_TAGS.sub(" ", html.unescape(_TAGS.sub(" ", value or ""))).split())
+    if len(text) > limit:
+        text = text[:limit].rsplit(" ", 1)[0] + " …"
+    return text
+
+
+def parse_feed(data, max_items, with_text=False):
+    """Liefert (Quellenname, [{title, text}]) für RSS 2.0, RSS 1.0 (RDF) und Atom."""
     root = ET.fromstring(data)
     source = ""
-    titles = []
+    entries = []
     for node in root.iter():
         name = _local(node.tag)
         if name in ("channel", "feed") and not source:
             source = _child_text(node, "title")
         elif name in ("item", "entry"):
-            title = _child_text(node, "title")
-            if title:
-                titles.append(" ".join(title.split()))
-            if len(titles) >= max_items:
+            title = " ".join(_child_text(node, "title").split())
+            if not title:
+                continue
+            text = ""
+            if with_text:   # RSS: description, Atom: summary bzw. content
+                text = plain_text(_child_text(node, "description") or _child_text(node, "summary")
+                                  or _child_text(node, "content"))
+                if text == title:
+                    text = ""
+            entries.append({"title": title, "text": text})
+            if len(entries) >= max_items:
                 break
-    return source, titles
+    return source, entries
 
 
 def fetch_news(cfg):
@@ -99,12 +121,12 @@ def fetch_news(cfg):
     per_feed = []
     for url in cfg.feeds:
         try:
-            source, titles = parse_feed(_get(cfg, url), cfg.max_headlines)
+            source, entries = parse_feed(_get(cfg, url), cfg.max_headlines, cfg.news_text)
         except Exception as exc:
             log.warning("Feed nicht lesbar (%s): %s", url, exc)
             continue
         source = source or urllib.parse.urlsplit(url).hostname or ""
-        per_feed.append([{"title": t, "source": source} for t in titles])
+        per_feed.append([dict(e, source=source) for e in entries])
     items = []
     while len(items) < cfg.max_headlines and any(per_feed):
         for entries in per_feed:
