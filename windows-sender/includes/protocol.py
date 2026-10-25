@@ -43,6 +43,14 @@ def calendar(events):
     return {"type": "calendar", "sent_at_ms": now_ms(), "data": {"events": events}}
 
 
+def weather(data):
+    return {"type": "weather", "sent_at_ms": now_ms(), "data": data}
+
+
+def news(items):
+    return {"type": "news", "sent_at_ms": now_ms(), "data": {"items": items}}
+
+
 def ping():
     return {"type": "ping", "sent_at_ms": now_ms()}
 

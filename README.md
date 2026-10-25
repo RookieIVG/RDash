@@ -48,7 +48,7 @@ zusammen mit **Uhrzeit und Datum** im Vollbild auf einem HDMI-Monitor an.
 | Monitor | HDMI-Monitor (optimiert für 24 Zoll Full HD, funktioniert auch kleiner) |
 | Windows-PC | Windows 11 mit Bluetooth, **Python 3.12 oder 3.13 (64 Bit)** von python.org |
 | Kalender | **Outlook (Classic)** – das „neue Outlook“ hat keine COM-Schnittstelle, dann `[calendar] enabled = false` |
-| Netzwerk | Nur für die Installation (apt/pip). Im Betrieb läuft alles über Bluetooth. |
+| Netzwerk | Pi: nur für die Installation/Updates (apt, git). Im Betrieb läuft alles über Bluetooth – der Pi braucht **kein** Internet. Wetter und Schlagzeilen (optional) holt der PC und schickt sie per Bluetooth weiter. |
 
 > **Firmenumgebung:** Auf verwalteten Arbeitsplätzen kann Bluetooth oder das Ausführen von PowerShell-Skripten
 > per Gruppenrichtlinie eingeschränkt sein. Vorab prüfen, ob Kopplung und Autostart erlaubt sind. Termine sind auf
@@ -254,7 +254,7 @@ baut der Sender selbst auf.
    ```powershell
    & "$env:LOCALAPPDATA\InfoDisplay\venv\Scripts\python.exe" "$env:LOCALAPPDATA\InfoDisplay\app\sender.py" --test
    ```
-   Es erscheinen `MEDIEN`, `COVER` und `KALENDER` als JSON.
+   Es erscheinen `MEDIEN`, `COVER` und `KALENDER` (sowie `WETTER` und `SCHLAGZEILEN`, falls eingeschaltet) als JSON.
 7. Sender starten:
    ```powershell
    Start-ScheduledTask -TaskName "InfoDisplay Sender"
@@ -277,7 +277,7 @@ baut der Sender selbst auf.
 ```bash
 python3 ~/infodisplay/tools/fake_sender.py --tcp 127.0.0.1:5099 --token <TOKEN> --seconds 120
 ```
-Mit `--no-calendar` sendet der Testsender keine Termine (wie ein PC ohne Outlook).
+Mit `--no-calendar` sendet der Testsender keine Termine (wie ein PC ohne Outlook), mit `--no-web` kein Wetter und keine Schlagzeilen.
 (Bei Variante B den Ordner `tools` mitkopieren.) Danach `tcp_test_port = 0` zurücksetzen!
 
 ---
@@ -294,6 +294,43 @@ keine Internetverbindung nötig). Schrift: Systemschrift des Pi (DejaVu Sans).
 | Hochformat (1080×1920) | Uhr/Datum oben, Termine in der Mitte, Musik unten |
 | Hochformat ohne Verbindung zum PC | Nur Uhr und Datum, groß und zentriert |
 | Keine Termine / kein Kalender | Der Terminbereich wird ganz ausgeblendet (keine Meldung) |
+
+### Wetter und Schlagzeilen
+
+Der Pi hat im Betrieb kein Internet – deshalb ruft der **Windows-PC** Wetter und Schlagzeilen ab und schickt sie
+per Bluetooth an den Pi. Beides ist standardmäßig aus und wird in `%APPDATA%\InfoDisplay\config.ini` am PC
+eingeschaltet:
+
+```ini
+[weather]
+enabled   = true
+place     = Graz            ; angezeigter Name
+latitude  = 47.07           ; Koordinaten (Google Maps: Rechtsklick auf den Ort -> Zahlen anklicken)
+longitude = 15.44
+
+[news]
+enabled = true
+; RSS-/Atom-Feeds, kommagetrennt (nur die Überschriften werden angezeigt)
+feeds = https://rss.orf.at/news.xml, https://rss.orf.at/steiermark.xml
+max_headlines = 10
+
+[internet]
+proxy =                     ; leer = Proxy aus den Windows-Einstellungen
+```
+Danach den Sender neu starten (`Stop-ScheduledTask "InfoDisplay Sender"; Start-ScheduledTask "InfoDisplay Sender"`).
+Prüfen, ob der PC die Daten bekommt: `sender.py --test` (Abschnitt 5, Schritt 6) zeigt `WETTER` und `SCHLAGZEILEN`.
+
+| Anzeige | Wo |
+|---|---|
+| Wetter | unter dem Datum: Symbol, Temperatur, Beschreibung, Tiefst-/Höchstwert, Ort (Daten: [Open-Meteo](https://open-meteo.com), kostenlos, ohne Anmeldung) |
+| Schlagzeilen | unten am Bildschirm, eine nach der anderen (Wechsel alle `news_seconds` Sekunden, Einstellung am Pi) |
+
+Wetter und Schlagzeilen werden alle 15 Minuten aktualisiert und nur angezeigt, solange der PC verbunden ist
+(und die Daten nicht älter als 3 Stunden sind). Im Ruhemodus (Hochformat ohne Verbindung) bleibt es bei Uhr und Datum.
+
+**Feed-Adressen finden:** Viele Nachrichtenseiten nennen ihren RSS-Feed im Seitenfuß („RSS“). Beispiele:
+`https://rss.orf.at/news.xml` (ORF News), `https://rss.orf.at/steiermark.xml` (ORF Steiermark),
+`https://www.derstandard.at/rss` (Der Standard). Nur `http`/`https` ist erlaubt.
 
 ### Hochformat einrichten
 
@@ -325,6 +362,7 @@ dann `rotation = 0` lassen.
 | security | `http_rate_per_sec` | 20 | Rate-Limit Webserver |
 | web | `host` / `port` | 127.0.0.1 / 8080 | Webserver nur lokal |
 | ui | `show_seconds` | true | Sekunden in der Uhr |
+| ui | `news_seconds` | 12 | Sekunden bis zur nächsten Schlagzeile |
 | ui | `layout` | auto | `auto` (nach Bildschirmform), `landscape` oder `portrait` – siehe Abschnitt 7 |
 | ui | `rotation` | 0 | Bildschirm drehen: `0`, `90`, `180`, `270` (Hochformat: `90` oder `270`) |
 | debug | `tcp_test_port` | 0 | TCP-Testzugang (nur zum Testen) |
@@ -347,6 +385,13 @@ Nach Änderungen: `sudo systemctl restart infodisplay`
 | calendar | `hide_subjects` | false | **Datenschutz:** nur „Termin“ statt Betreff/Ort |
 | calendar | `hide_private` | true | Private Termine als „Privater Termin“ |
 | calendar | `restrict_date_format` | `%d.%m.%Y %H:%M` | Datumsformat für Outlook-Filter (Systemsprache) |
+| weather | `enabled` | false | Wetter abrufen (Open-Meteo) |
+| weather | `place` / `latitude` / `longitude` | Graz / 47.07 / 15.44 | Ort |
+| weather | `refresh_minutes` | 15 | Aktualisierung |
+| news | `enabled` | false | Schlagzeilen abrufen |
+| news | `feeds` | ORF News | RSS-/Atom-Adressen, kommagetrennt |
+| news | `max_headlines` / `refresh_minutes` | 10 / 15 | Anzahl (abwechselnd aus allen Feeds), Aktualisierung |
+| internet | `proxy` / `timeout` | leer / 15 | Proxy (leer = Windows-Einstellung), Zeitlimit je Abruf |
 | logging | `file` / `level` | `%LOCALAPPDATA%\InfoDisplay\logs\sender.log` / INFO | Zentrales Log |
 
 Nach Änderungen: Aufgabe neu starten
@@ -457,6 +502,7 @@ Den neuen Token in `%APPDATA%\InfoDisplay\config.ini` am neuen PC eintragen und 
 | Rate-Limiting | Verbindungsversuche pro Gerät, Nachrichten pro Verbindung, HTTP-Anfragen pro IP, max. SSE-Clients |
 | Eingabeprüfung | Max. Nachrichtengröße, Typ-/Längenprüfung, Steuerzeichen entfernt, Cover nur JPEG/PNG (Magic Bytes) |
 | Ausgabe | Anzeige setzt Texte nur per `textContent` (kein HTML), strikte Content-Security-Policy |
+| Internet | Nur der PC greift aufs Internet zu (Wetter/Feeds, nur `http`/`https`, max. 2 MB, Zeitlimit, XML ohne externe Entitäten/Entity-Bomben). Der Pi bleibt offline und prüft auch diese Daten (Typ, Länge, Wertebereich) |
 | Webserver | Nur `127.0.0.1`, nur lesende GET-Endpunkte, Pfadprüfung gegen Directory Traversal, Security-Header |
 | Konfiguration | Zugangsdaten außerhalb des Web-Roots: `/etc/infodisplay` (640) bzw. `%APPDATA%` (nur Benutzer) |
 | Dienst | Eigener Systembenutzer ohne Login, systemd-Härtung (`ProtectSystem=strict`, `NoNewPrivileges`, …) |
@@ -482,6 +528,7 @@ Browser, keine schreibenden Endpunkte). Die Bluetooth-Verbindung ist durch die K
 | Kopplung schlägt fehl | Auf dem Pi `bluetoothctl` → `remove <PC-MAC>`, in Windows Gerät entfernen, Schritt 4 wiederholen |
 | Hochformat-Bild verdreht oder nicht gedreht | `rotation` auf `270` statt `90` setzen; Ausgangsname prüfen: `wlr-randr` in einem Terminal am Pi-Desktop |
 | Popup „Übersetzen? Deutsch / Englisch“ oben rechts | Ab 1.2.2 abgeschaltet: Update einspielen (Abschnitt 9) und Pi neu starten. Prüfen: `cat /etc/chromium/policies/managed/infodisplay.json` |
+| Kein Wetter / keine Schlagzeilen | Am PC `sender.py --test` ausführen: Fehlermeldungen zeigen, ob Proxy (`[internet] proxy`) oder Feed-Adresse falsch ist. Sender-Log auf „Feed nicht lesbar“ / „Wetter nicht abrufbar“ prüfen. Pi und PC müssen ab Version 1.4.0 laufen |
 | Mauszeiger sichtbar | Ab 1.3.0 wird er beim Start ausgeblendet und in die Ecke geschoben (`wlrctl`, wird von `install.sh` installiert). Sonst Maus einmal bewegen oder abstecken – im Betrieb wird keine Maus gebraucht |
 | Schwarzer Bildschirm | `curl 127.0.0.1:8080/healthz`; Autostart: `cat ~/.config/labwc/autostart` |
 
@@ -502,6 +549,8 @@ Eine JSON-Nachricht pro Zeile (UTF-8, abgeschlossen mit `\n`), Protokollversion 
 | PC → Pi | `media` | `active`, `status` (playing/paused/stopped), `title`, `artist`, `album`, `source_app`, `position_ms`, `duration_ms`, `cover_id` |
 | PC → Pi | `cover` | `id` (Hash), `mime`, `b64` – nur bei Titelwechsel |
 | PC → Pi | `calendar` | `events[]` mit `subject`, `location`, `start`, `end` (lokal, `YYYY-MM-DDTHH:MM`), `all_day` |
+| PC → Pi | `weather` | `place`, `temp`, `code` (WMO-Wettercode), `is_day`, `t_max`, `t_min` – optional, alle 15 min |
+| PC → Pi | `news` | `items[]` mit `title`, `source` (max. 30) – optional, alle 15 min |
 | PC → Pi | `ping` | Lebenszeichen alle 20 s |
 | PC → Pi | `bye` | Sender beendet sich |
 
@@ -540,7 +589,7 @@ infodisplay/
 │   ├── install.ps1             Installation/Deinstallation, Autostart
 │   ├── requirements.txt
 │   ├── config/config.example.ini
-│   └── includes/               config, logger, protocol, link_client, media, calendar_outlook
+│   └── includes/               config, logger, protocol, link_client, media, calendar_outlook, web_feeds
 └── pi-display/
     ├── receiver.py             Hauptprogramm (Dienst)
     ├── config/config.example.ini

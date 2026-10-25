@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen am InfoDisplay. Format nach [Keep a Changelog](htt
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 Neue Einträge werden mit `python tools/bump_version.py` automatisch erzeugt.
 
+## [1.4.0] – 2026-10-25
+
+### Hinzugefügt
+- Wetter (Open-Meteo) unter dem Datum – der Windows-PC ruft es ab und sendet es per Bluetooth ([weather] in der Sender-Config)
+- Schlagzeilen aus RSS-/Atom-Feeds am unteren Bildschirmrand, wechselnd ([news] in der Sender-Config, [ui] news_seconds am Pi)
+- Protokoll: neue Nachrichtentypen weather und news (Protokollversion bleibt 1); Testsender mit --no-web
+
 ## [1.3.0] – 2026-10-25
 
 ### Geändert

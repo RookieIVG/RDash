@@ -39,12 +39,21 @@
       <section class="block block-clock" aria-label="Uhrzeit">
         <p id="clock-time" class="clock-time">--:--</p>
         <p id="clock-date" class="clock-date">&nbsp;</p>
+        <p id="weather" class="weather" hidden>
+          <i id="weather-icon" class="bi bi-cloud" aria-hidden="true"></i>
+          <span id="weather-temp" class="weather-temp"></span>
+          <span id="weather-text" class="weather-text"></span>
+        </p>
       </section>
 
       <section class="block block-calendar" aria-label="Termine">
         <ul id="calendar-list" class="events"></ul>
       </section>
     </div>
+
+    <section id="news" class="block block-news" aria-label="Schlagzeilen" hidden>
+      <p class="news-line"><span id="news-source" class="news-source"></span><span id="news-title" class="news-title"></span></p>
+    </section>
   </main>
 </body>
 </html>

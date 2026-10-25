@@ -125,6 +125,42 @@ p { margin: 0; }
 .clock-time .sec { color: var(--text-muted); font-size: 0.4em; margin-left: 0.15em; vertical-align: 1.1em; }
 .clock-date { margin-top: 0.5em; font-size: clamp(1rem, 1.35vw, 1.8rem); color: var(--text-muted); }
 
+/* ------------------------------------------------------------ Wetter */
+.weather {
+  margin-top: 0.8em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  color: var(--text-muted);
+  font-size: clamp(1rem, 1.2vw, 1.6rem);
+}
+.weather .bi { font-size: 1.4em; color: var(--text); }
+.weather-temp { color: var(--text); font-weight: bold; font-size: 1.15em; }
+
+/* ------------------------------------------------------------ Schlagzeilen */
+body.has-news .layout { grid-template-rows: minmax(0, 1fr) auto; }
+.block-news { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 0.9em; }
+.news-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8em;
+  min-width: 0;
+  font-size: 1.15em;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.news-line.is-visible { opacity: 1; }
+.news-source {
+  flex: none;
+  font-size: 0.75em;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.news-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
 /* ------------------------------------------------------------ Termine */
 .block-calendar { overflow: hidden; }
 .events { list-style: none; margin: 0; padding: 0; overflow-y: auto; display: flex; flex-direction: column; }
@@ -179,7 +215,8 @@ body.no-events .block-clock { justify-content: center; }
 }
 
 @media (max-width: 1199px) {
-  .layout { grid-template-columns: 1fr; }
+  .layout, body.has-news .layout { grid-template-columns: 1fr; grid-template-rows: none; }
+  .news-title { white-space: normal; }
   .side { grid-template-rows: auto auto; }
   .block-calendar, .events { overflow: visible; }
 }
@@ -204,14 +241,18 @@ body.is-portrait .layout {
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) auto;
 }
+body.is-portrait.has-news .layout { grid-template-rows: auto minmax(0, 1fr) auto auto; }
 body.is-portrait .side { display: contents; }
 body.is-portrait .block-clock { order: 1; }
 body.is-portrait .block-calendar { order: 2; overflow: hidden; }
 body.is-portrait .block-media { order: 3; }
+body.is-portrait .block-news { order: 4; }
+body.is-portrait .news-title { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 body.is-portrait .events { overflow-y: auto; }
 
 body.is-portrait .clock-time { font-size: clamp(4rem, 14vw, 11rem); }
 body.is-portrait .clock-date { font-size: clamp(1.2rem, 3.2vw, 2.4rem); }
+body.is-portrait .weather { font-size: clamp(1.1rem, 2.8vw, 2.1rem); }
 
 body.is-portrait .cover { width: clamp(180px, 28vw, 340px); }
 body.is-portrait .cover-placeholder { font-size: clamp(64px, 10vw, 140px); }
@@ -221,12 +262,13 @@ body.is-portrait .media-album { font-size: clamp(0.95rem, 2.1vw, 1.5rem); }
 
 /* Ruhemodus im Hochformat: keine Verbindung -> nur Uhr und Datum, zentriert */
 body.is-portrait.is-idle .block-calendar,
-body.is-portrait.is-idle .block-media { display: none; }
+body.is-portrait.is-idle .block-media,
+body.is-portrait.is-idle .block-news { display: none; }
 body.is-portrait.is-idle .layout { grid-template-rows: minmax(0, 1fr); }
 body.is-portrait.is-idle .block-clock { justify-content: center; }
 body.is-portrait.is-idle .clock-time { font-size: clamp(5rem, 22vw, 16rem); }
 body.is-portrait.is-idle .clock-date { font-size: clamp(1.4rem, 4.4vw, 3.4rem); margin-top: 0.6em; }
 
 @media (prefers-reduced-motion: reduce) {
-  .progress-fill { transition: none; }
+  .progress-fill, .news-line { transition: none; }
 }
