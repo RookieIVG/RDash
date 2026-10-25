@@ -97,7 +97,7 @@ def load_config(path=None):
         raise FileNotFoundError(f"Konfigurationsdatei nicht gefunden: {path}")
     cp = configparser.ConfigParser(interpolation=None)
     cp.read_dict(_DEFAULTS)
-    cp.read(path, encoding="utf-8")
+    cp.read(path, encoding="utf-8-sig")   # auch mit BOM (Editor "UTF-8 mit BOM", PowerShell 5)
 
     layout = cp.get("ui", "layout").strip().lower()
     focus = cp.get("ui", "focus").strip().lower()

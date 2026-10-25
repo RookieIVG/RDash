@@ -4,6 +4,14 @@ Alle wesentlichen Änderungen am InfoDisplay. Format nach [Keep a Changelog](htt
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 Neue Einträge werden mit `python tools/bump_version.py` automatisch erzeugt.
 
+## [1.5.1] – 2026-10-25
+
+### Behoben
+- Config-Dateien mit BOM (z. B. per PowerShell 5 oder Editor „UTF-8 mit BOM“ gespeichert) werden jetzt gelesen
+
+### Hinzugefügt
+- ANLEITUNG-FIRMEN-PC.md: Umzug auf einen anderen PC (Firmen-PC) – IT-Voraussetzungen, Installation, Config übertragen, Bluetooth-Kopplung, alten PC abmelden, Test, Fehlersuche
+
 ## [1.5.0] – 2026-10-25
 
 ### Hinzugefügt
