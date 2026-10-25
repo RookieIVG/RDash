@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen am InfoDisplay. Format nach [Keep a Changelog](htt
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 Neue Einträge werden mit `python tools/bump_version.py` automatisch erzeugt.
 
+## [1.1.0] – 2026-10-25
+
+### Hinzugefügt
+- Pi-Anzeige: Hochformat-Layout für 1080×1920 (Uhr/Datum oben, Termine, Musik unten), wählbar über [ui] layout
+- Pi-Anzeige: Ruhemodus im Hochformat – ohne Verbindung nur Uhr und Datum zentriert
+- Pi: Bildschirmdrehung über [ui] rotation (wlr-randr beim Kiosk-Start)
+
 ## [1.0.0] – 2026-10-25
 
 ### Hinzugefügt

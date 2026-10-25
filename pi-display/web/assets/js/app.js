@@ -63,6 +63,22 @@
       if (logo.getAttribute("src") !== ui.logo) { logo.setAttribute("src", ui.logo); }
     }
     if (window.InfoTheme) { window.InfoTheme.setDefault(ui.default_theme || "auto"); }
+    applyLayout();
+  }
+
+  // Hochformat: per Config erzwungen oder (auto) wenn der Bildschirm höher als breit ist.
+  // Die Breitengrenze verhindert, dass Handys im Hochformat das Kiosk-Layout bekommen.
+  function applyLayout() {
+    var mode = (state && state.ui && state.ui.layout) || "auto";
+    var portrait = mode === "portrait" ||
+      (mode === "auto" && window.innerHeight > window.innerWidth && window.innerWidth >= 900);
+    document.body.classList.toggle("is-portrait", portrait);
+  }
+
+  // Ruhemodus: ohne Verbindung zum PC nur Uhr und Datum zentriert (Hochformat, siehe style.css)
+  function renderIdle() {
+    var connected = serverReachable && state && state.link && state.link.connected;
+    document.body.classList.toggle("is-idle", !connected);
   }
 
   function renderLink() {
@@ -80,6 +96,7 @@
     chip.className = "status-chip " + cls;
     text.textContent = label;
     setText("footer-client", link && link.client ? "Sender: " + link.client : "");
+    renderIdle();
   }
 
   function renderFooterAge() {
@@ -265,6 +282,7 @@
     var chip = $("link-status");
     chip.className = "status-chip is-warn";
     chip.querySelector(".status-text").textContent = "Anzeige-Dienst nicht erreichbar";
+    renderIdle();
   }
 
   function poll() {
@@ -292,6 +310,9 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+    applyLayout();
+    renderIdle();
+    window.addEventListener("resize", applyLayout);
     tickClock();
     setInterval(tickClock, 1000);
     setInterval(tickProgress, 250);

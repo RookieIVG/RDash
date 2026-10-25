@@ -395,6 +395,53 @@ h1, h2, p { margin: 0; }
   .app-footer { justify-content: center; text-align: center; }
 }
 
+/* ------------------------------------------------------------ Hochformat (Kiosk 1080×1920)
+   Klasse is-portrait setzt app.js ([ui] layout = portrait oder auto bei hohem Bildschirm).
+   Reihenfolge: Uhr/Datum oben, Termine in der Mitte, Musik unten. */
+body.is-portrait {
+  height: 100vh;
+  overflow: hidden;
+  font-size: clamp(16px, 1.8vw, 26px);
+  --gap: clamp(14px, 1.8vw, 28px);
+}
+body.is-portrait .brand-logo-wrap { height: clamp(44px, 5vw, 72px); }
+body.is-portrait .brand-title { font-size: clamp(1.15rem, 2.8vw, 2.2rem); }
+body.is-portrait .layout {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+body.is-portrait .side { display: contents; }
+body.is-portrait .card-clock { order: 1; }
+body.is-portrait .card-calendar { order: 2; overflow: hidden; }
+body.is-portrait .card-media { order: 3; }
+body.is-portrait .events { overflow-y: auto; }
+body.is-portrait .card-head h2 { font-size: clamp(1.1rem, 2.4vw, 1.8rem); }
+
+body.is-portrait .clock-time { font-size: clamp(4rem, 13vw, 10rem); }
+body.is-portrait .clock-date { font-size: clamp(1.2rem, 3vw, 2.4rem); }
+
+body.is-portrait .media { gap: clamp(18px, 3vw, 40px); }
+body.is-portrait .cover { width: clamp(180px, 28vw, 340px); }
+body.is-portrait .cover-placeholder { font-size: clamp(72px, 12vw, 160px); }
+body.is-portrait .media-title { font-size: clamp(1.6rem, 4vw, 3.2rem); -webkit-line-clamp: 2; }
+body.is-portrait .media-artist { font-size: clamp(1.15rem, 2.8vw, 2.1rem); }
+body.is-portrait .media-album { font-size: clamp(0.95rem, 2.1vw, 1.5rem); }
+body.is-portrait .card-media .empty-state { padding: 12px; }
+body.is-portrait .empty-state .bi { font-size: clamp(48px, 7vw, 96px); }
+body.is-portrait .empty-state p { font-size: clamp(1rem, 2.4vw, 1.8rem); }
+
+/* Ruhemodus im Hochformat: keine Verbindung -> nur Uhr und Datum, zentriert */
+body.is-portrait.is-idle .card-calendar,
+body.is-portrait.is-idle .card-media { display: none; }
+body.is-portrait.is-idle .layout { grid-template-rows: minmax(0, 1fr); }
+body.is-portrait.is-idle .card-clock {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+body.is-portrait.is-idle .clock-time { font-size: clamp(5rem, 22vw, 16rem); }
+body.is-portrait.is-idle .clock-date { font-size: clamp(1.4rem, 4.4vw, 3.4rem); margin-top: 0.6em; }
+
 @media (prefers-reduced-motion: reduce) {
   .progress-fill, .btn { transition: none; }
 }

@@ -232,10 +232,32 @@ keine Internetverbindung nötig). Hell/Dunkel über den Mond/Sonne-Knopf oben re
 | ui | `title` | Info-Display | Überschrift im Header |
 | ui | `default_theme` | auto | `auto`, `light` oder `dark` |
 | ui | `show_seconds` | true | Sekunden in der Uhr |
+| ui | `layout` | auto | `auto` (nach Bildschirmform), `landscape` oder `portrait` – siehe unten |
+| ui | `rotation` | 0 | Bildschirm drehen: `0`, `90`, `180`, `270` (Hochformat: `90` oder `270`) |
 | debug | `tcp_test_port` | 0 | TCP-Testzugang (nur zum Testen) |
 | logging | `file` / `level` | /var/log/infodisplay/… / INFO | Zentrales Log |
 
 Nach Änderungen: `sudo systemctl restart infodisplay`
+
+### Hochformat (Monitor hochkant, 1080×1920)
+
+| Format | Anordnung |
+|---|---|
+| Querformat | Musik links, Uhr/Datum und Termine rechts |
+| Hochformat | Uhr/Datum oben, Termine in der Mitte, Musik unten |
+| Hochformat ohne Verbindung zum PC | Nur Uhr und Datum, groß und zentriert |
+
+Einrichten in `/etc/infodisplay/config.ini`:
+```ini
+[ui]
+layout   = auto     ; erkennt das Hochformat selbst, "portrait" erzwingt es
+rotation = 90       ; steht das Bild auf dem Kopf: 270
+```
+Danach `sudo systemctl restart infodisplay` und `sudo reboot`. Die Drehung setzt `kiosk.sh` beim Start der
+Anzeige mit `wlr-randr` (wird von `install.sh` installiert). Gibt es mehrere Bildschirme, den Ausgang in
+`~/.config/labwc/autostart` vorgeben: `INFODISPLAY_OUTPUT=HDMI-A-1 /opt/infodisplay/kiosk.sh &`.
+Alternativ lässt sich die Drehung auch am Pi-Desktop unter *Einstellungen → Bildschirmkonfiguration* einstellen –
+dann `rotation = 0` lassen.
 
 ### Windows – `%APPDATA%\InfoDisplay\config.ini`
 
@@ -291,6 +313,7 @@ Browser, keine schreibenden Endpunkte). Die Bluetooth-Verbindung ist durch die K
 | Kein Cover | Manche Apps (z. B. Browser) liefern kein Cover → Platzhalter wird angezeigt |
 | Keine Termine | Läuft Outlook (Classic)? `start_outlook = true` setzen. Log auf „Datumsformat“ prüfen |
 | Kopplung schlägt fehl | Auf dem Pi `bluetoothctl` → `remove <PC-MAC>`, in Windows Gerät entfernen, Schritt 4 wiederholen |
+| Hochformat-Bild verdreht oder nicht gedreht | `rotation` auf `270` statt `90` setzen; Ausgangsname prüfen: `wlr-randr` in einem Terminal am Pi-Desktop |
 | Schwarzer Bildschirm | `curl 127.0.0.1:8080/healthz`; Autostart: `cat ~/.config/labwc/autostart` |
 
 **Logs:**

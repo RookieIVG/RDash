@@ -13,6 +13,32 @@ for _ in $(seq 1 60); do
   sleep 2
 done
 
+# ------------------------------------------------------------------ Bildschirm drehen ([ui] rotation)
+# Die Config ist für den Desktop-Benutzer nicht lesbar – der Wert kommt daher vom lokalen Dienst.
+ROTATION="$(curl -fsS --max-time 2 "${HEALTH%/healthz}/api/state" 2>/dev/null \
+  | python3 -c 'import json,sys; print(int(json.load(sys.stdin).get("ui",{}).get("rotation",0)))' 2>/dev/null || echo 0)"
+
+rotate_display() {
+  local transform output
+  case "$ROTATION" in
+    90|180|270) transform="$ROTATION" ;;
+    *) transform="normal" ;;
+  esac
+  command -v wlr-randr >/dev/null || { echo "wlr-randr fehlt – Drehung übersprungen" >&2; return; }
+  # Ausgang: INFODISPLAY_OUTPUT (z. B. HDMI-A-1) oder der erste angeschlossene Bildschirm
+  output="${INFODISPLAY_OUTPUT:-$(wlr-randr 2>/dev/null | awk '/^[^ ]/ {print $1; exit}')}"
+  [ -n "$output" ] || { echo "Kein Bildschirm gefunden – Drehung übersprungen" >&2; return; }
+  wlr-randr --output "$output" --transform "$transform"
+}
+
+if [ "$ROTATION" != "0" ]; then
+  rotate_display
+  # kanshi (Bildschirmkonfiguration des Desktops) kann beim Sitzungsstart nachziehen – einmal wiederholen
+  sleep 3
+  rotate_display
+  sleep 1
+fi
+
 BROWSER="$(command -v chromium || command -v chromium-browser)"
 if [ -z "$BROWSER" ]; then
   echo "Chromium nicht gefunden" >&2

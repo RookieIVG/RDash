@@ -40,6 +40,8 @@ _DEFAULTS = {
         "default_theme": "auto",
         "show_seconds": "true",
         "logo": "assets/img/logo.svg",
+        "layout": "auto",
+        "rotation": "0",
     },
     "debug": {
         "tcp_test_port": "0",
@@ -79,6 +81,8 @@ class ReceiverConfig:
     ui_default_theme: str = "auto"
     ui_show_seconds: bool = True
     ui_logo: str = "assets/img/logo.svg"
+    ui_layout: str = "auto"
+    ui_rotation: int = 0
     tcp_test_port: int = 0
     tcp_test_host: str = "127.0.0.1"
     log_file: str = ""
@@ -96,6 +100,7 @@ def load_config(path=None):
     cp.read(path, encoding="utf-8")
 
     theme = cp.get("ui", "default_theme").strip().lower()
+    layout = cp.get("ui", "layout").strip().lower()
     cfg = ReceiverConfig(
         path=path,
         bt_enabled=cp.getboolean("bluetooth", "enabled"),
@@ -120,6 +125,8 @@ def load_config(path=None):
         ui_default_theme=theme if theme in ("auto", "light", "dark") else "auto",
         ui_show_seconds=cp.getboolean("ui", "show_seconds"),
         ui_logo=cp.get("ui", "logo").strip().lstrip("/"),
+        ui_layout=layout if layout in ("auto", "landscape", "portrait") else "auto",
+        ui_rotation=cp.getint("ui", "rotation"),
         tcp_test_port=cp.getint("debug", "tcp_test_port"),
         tcp_test_host=cp.get("debug", "tcp_test_host").strip(),
         log_file=cp.get("logging", "file").strip(),
@@ -132,6 +139,8 @@ def load_config(path=None):
         raise ValueError("bluetooth.token fehlt oder ist zu kurz (mind. 16 Zeichen)")
     if not 1 <= cfg.channel <= 30:
         raise ValueError("bluetooth.channel muss zwischen 1 und 30 liegen")
+    if cfg.ui_rotation not in (0, 90, 180, 270):
+        raise ValueError("ui.rotation muss 0, 90, 180 oder 270 sein")
     if not os.path.isdir(cfg.web_root):
         raise ValueError(f"web.web_root existiert nicht: {cfg.web_root}")
     return cfg
