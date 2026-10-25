@@ -36,10 +36,7 @@ _DEFAULTS = {
         "web_root": "/opt/infodisplay/web",
     },
     "ui": {
-        "title": "Info-Display",
-        "default_theme": "auto",
         "show_seconds": "true",
-        "logo": "assets/img/logo.svg",
         "layout": "auto",
         "rotation": "0",
     },
@@ -77,10 +74,7 @@ class ReceiverConfig:
     web_host: str = "127.0.0.1"
     web_port: int = 8080
     web_root: str = "/opt/infodisplay/web"
-    ui_title: str = "Info-Display"
-    ui_default_theme: str = "auto"
     ui_show_seconds: bool = True
-    ui_logo: str = "assets/img/logo.svg"
     ui_layout: str = "auto"
     ui_rotation: int = 0
     tcp_test_port: int = 0
@@ -99,7 +93,6 @@ def load_config(path=None):
     cp.read_dict(_DEFAULTS)
     cp.read(path, encoding="utf-8")
 
-    theme = cp.get("ui", "default_theme").strip().lower()
     layout = cp.get("ui", "layout").strip().lower()
     cfg = ReceiverConfig(
         path=path,
@@ -121,10 +114,7 @@ def load_config(path=None):
         web_host=cp.get("web", "host").strip(),
         web_port=cp.getint("web", "port"),
         web_root=os.path.realpath(cp.get("web", "web_root").strip()),
-        ui_title=cp.get("ui", "title").strip()[:60] or "Info-Display",
-        ui_default_theme=theme if theme in ("auto", "light", "dark") else "auto",
         ui_show_seconds=cp.getboolean("ui", "show_seconds"),
-        ui_logo=cp.get("ui", "logo").strip().lstrip("/"),
         ui_layout=layout if layout in ("auto", "landscape", "portrait") else "auto",
         ui_rotation=cp.getint("ui", "rotation"),
         tcp_test_port=cp.getint("debug", "tcp_test_port"),
