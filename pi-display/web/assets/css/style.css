@@ -28,7 +28,8 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-body.kiosk { cursor: none; }
+/* Kiosk: Mauszeiger überall ausblenden (greift, sobald sich die Maus einmal bewegt – siehe kiosk.sh) */
+body.kiosk, body.kiosk * { cursor: none !important; }
 
 p { margin: 0; }
 
@@ -160,6 +161,11 @@ p { margin: 0; }
   text-transform: uppercase;
   color: var(--text-muted);
 }
+
+/* Keine Termine: Bereich ausblenden; im Querformat die Uhr in der rechten Spalte mittig */
+body.no-events .block-calendar { display: none; }
+body.no-events .side { grid-template-rows: minmax(0, 1fr); }
+body.no-events .block-clock { justify-content: center; }
 
 /* ------------------------------------------------------------ Fehlerseiten */
 .error-page { flex: 1; display: grid; place-items: center; text-align: center; padding: var(--gap); }

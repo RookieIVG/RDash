@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen am InfoDisplay. Format nach [Keep a Changelog](htt
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 Neue Einträge werden mit `python tools/bump_version.py` automatisch erzeugt.
 
+## [1.3.0] – 2026-10-25
+
+### Geändert
+- Pi-Anzeige: ohne Termine bzw. ohne Kalender wird der Terminbereich ausgeblendet – keine Meldung mehr
+- Kiosk: Mauszeiger wird per CSS ausgeblendet und beim Start mit wlrctl in die Ecke geschoben
+- Testsender: Option --no-calendar
+
 ## [1.2.2] – 2026-10-25
 
 ### Behoben

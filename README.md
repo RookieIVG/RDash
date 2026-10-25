@@ -165,7 +165,7 @@ sudo btmgmt power on                      # genauere Fehlermeldung
    sudo ./install.sh
    ```
 3. Das Skript erledigt:
-   - Pakete `python3`, `bluez`, `chromium`, `curl`, `wlr-randr`
+   - Pakete `python3`, `bluez`, `chromium`, `curl`, `wlr-randr`, `wlrctl`
    - Dienstbenutzer `infodisplay`, Programm nach `/opt/infodisplay`
    - Konfiguration nach `/etc/infodisplay/config.ini` mit **neu erzeugtem Token** (Rechte 640)
    - systemd-Dienst `infodisplay` (startet automatisch)
@@ -277,6 +277,7 @@ baut der Sender selbst auf.
 ```bash
 python3 ~/infodisplay/tools/fake_sender.py --tcp 127.0.0.1:5099 --token <TOKEN> --seconds 120
 ```
+Mit `--no-calendar` sendet der Testsender keine Termine (wie ein PC ohne Outlook).
 (Bei Variante B den Ordner `tools` mitkopieren.) Danach `tcp_test_port = 0` zurücksetzen!
 
 ---
@@ -292,6 +293,7 @@ keine Internetverbindung nötig). Schrift: Systemschrift des Pi (DejaVu Sans).
 | Querformat (1920×1080) | Musik links, Uhr/Datum und Termine rechts |
 | Hochformat (1080×1920) | Uhr/Datum oben, Termine in der Mitte, Musik unten |
 | Hochformat ohne Verbindung zum PC | Nur Uhr und Datum, groß und zentriert |
+| Keine Termine / kein Kalender | Der Terminbereich wird ganz ausgeblendet (keine Meldung) |
 
 ### Hochformat einrichten
 
@@ -480,6 +482,7 @@ Browser, keine schreibenden Endpunkte). Die Bluetooth-Verbindung ist durch die K
 | Kopplung schlägt fehl | Auf dem Pi `bluetoothctl` → `remove <PC-MAC>`, in Windows Gerät entfernen, Schritt 4 wiederholen |
 | Hochformat-Bild verdreht oder nicht gedreht | `rotation` auf `270` statt `90` setzen; Ausgangsname prüfen: `wlr-randr` in einem Terminal am Pi-Desktop |
 | Popup „Übersetzen? Deutsch / Englisch“ oben rechts | Ab 1.2.2 abgeschaltet: Update einspielen (Abschnitt 9) und Pi neu starten. Prüfen: `cat /etc/chromium/policies/managed/infodisplay.json` |
+| Mauszeiger sichtbar | Ab 1.3.0 wird er beim Start ausgeblendet und in die Ecke geschoben (`wlrctl`, wird von `install.sh` installiert). Sonst Maus einmal bewegen oder abstecken – im Betrieb wird keine Maus gebraucht |
 | Schwarzer Bildschirm | `curl 127.0.0.1:8080/healthz`; Autostart: `cat ~/.config/labwc/autostart` |
 
 **Logs:**
