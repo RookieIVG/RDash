@@ -35,6 +35,9 @@ zusammen mit **Uhrzeit und Datum** im Vollbild auf einem HDMI-Monitor an.
 14. [Versionierung und Changelog](#14-versionierung-und-changelog)
 15. [Ordnerstruktur](#15-ordnerstruktur)
 
+**Umzug auf einen anderen PC (z. B. Firmen-PC):** eigene Schritt-für-Schritt-Anleitung in
+[`ANLEITUNG-FIRMEN-PC.md`](ANLEITUNG-FIRMEN-PC.md) – inkl. Übertragung der Config und Bluetooth-Kopplung.
+
 **Download:** <https://github.com/RookieIVG/RDash> – aktueller Stand als ZIP:
 <https://github.com/RookieIVG/RDash/archive/refs/heads/main.zip> (entpackt heißt der Ordner `RDash-main`).
 
@@ -475,6 +478,8 @@ Pi und PC sollten auf derselben Version laufen (Protokollversion `v = 1` muss gl
 
 ## 10. PC wechseln (neuen Sender einrichten)
 
+> Ausführliche Anleitung mit Config-Übertragung und Hinweisen für Firmen-PCs: [`ANLEITUNG-FIRMEN-PC.md`](ANLEITUNG-FIRMEN-PC.md).
+
 Wenn ein anderer Windows-PC die Daten senden soll (neuer Arbeitsplatz, Tausch-PC):
 
 **1. Neuen PC am Pi koppeln** – wie Abschnitt 4 (Bluetooth koppeln), mit dem neuen PC.
@@ -605,6 +610,7 @@ infodisplay/
 ├── VERSION                     Versionsnummer (SemVer)
 ├── CHANGELOG.md                Änderungsprotokoll
 ├── README.md                   diese Anleitung
+├── ANLEITUNG-FIRMEN-PC.md      Umzug auf einen anderen PC (Firmen-PC), Config übertragen, Kopplung
 ├── tools/
 │   ├── bump_version.py         Version + Changelog automatisch fortschreiben
 │   └── fake_sender.py          Testsender mit Beispieldaten
