@@ -170,6 +170,7 @@ sudo btmgmt power on                      # genauere Fehlermeldung
    - Konfiguration nach `/etc/infodisplay/config.ini` mit **neu erzeugtem Token** (Rechte 640)
    - systemd-Dienst `infodisplay` (startet automatisch)
    - Kiosk-Autostart (`~/.config/labwc/autostart`), Bildschirm-Abschaltung deaktiviert, Desktop-Autologin
+   - Chromium-Richtlinie `/etc/chromium/policies/managed/infodisplay.json` (kein Übersetzungs-Popup)
 4. Am Ende werden **Bluetooth-Adresse, Kanal und Token** angezeigt – notieren. Später nachsehen mit:
    ```bash
    sudo grep -E '^(channel|token)' /etc/infodisplay/config.ini
@@ -478,6 +479,7 @@ Browser, keine schreibenden Endpunkte). Die Bluetooth-Verbindung ist durch die K
 | `Failed to set power on: org.bluez.Error.Failed` | Bluetooth per rfkill gesperrt → Abschnitt 2.2 |
 | Kopplung schlägt fehl | Auf dem Pi `bluetoothctl` → `remove <PC-MAC>`, in Windows Gerät entfernen, Schritt 4 wiederholen |
 | Hochformat-Bild verdreht oder nicht gedreht | `rotation` auf `270` statt `90` setzen; Ausgangsname prüfen: `wlr-randr` in einem Terminal am Pi-Desktop |
+| Popup „Übersetzen? Deutsch / Englisch“ oben rechts | Ab 1.2.2 abgeschaltet: Update einspielen (Abschnitt 9) und Pi neu starten. Prüfen: `cat /etc/chromium/policies/managed/infodisplay.json` |
 | Schwarzer Bildschirm | `curl 127.0.0.1:8080/healthz`; Autostart: `cat ~/.config/labwc/autostart` |
 
 **Logs:**

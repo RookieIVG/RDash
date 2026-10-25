@@ -4,6 +4,11 @@ Alle wesentlichen Änderungen am InfoDisplay. Format nach [Keep a Changelog](htt
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 Neue Einträge werden mit `python tools/bump_version.py` automatisch erzeugt.
 
+## [1.2.2] – 2026-10-25
+
+### Behoben
+- Pi-Anzeige: Übersetzungs-Popup von Chromium abgeschaltet (translate=no, Chromium-Richtlinie TranslateEnabled=false, --lang=de-AT)
+
 ## [1.2.1] – 2026-10-25
 
 ### Behoben
