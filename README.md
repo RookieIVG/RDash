@@ -151,16 +151,16 @@ sudo btmgmt power on                      # genauere Fehlermeldung
 1. Projekt auf den Pi holen – **Variante A (empfohlen): direkt am Pi von GitHub**:
    ```bash
    sudo apt install -y git
-   git clone https://github.com/RookieIVG/RDash.git ~/RDash
+   git clone https://github.com/RookieIVG/RDash.git ~/infodisplay
    ```
    **Variante B: vom Windows-PC kopieren** (im entpackten Projektordner, siehe 2.1):
    ```powershell
-   scp -r .\pi-display .\VERSION .\tools benutzer@raspberrypi.local:~/RDash/
+   scp -r .\pi-display .\VERSION .\tools benutzer@raspberrypi.local:~/infodisplay/
    ```
 2. Auf dem Pi installieren – **als normaler Desktop-Benutzer mit sudo** (nicht als root anmelden),
    damit der Kiosk-Autostart für diesen Benutzer eingerichtet wird:
    ```bash
-   cd ~/RDash/pi-display/install
+   cd ~/infodisplay/pi-display/install
    chmod +x install.sh
    sudo ./install.sh
    ```
@@ -274,7 +274,7 @@ baut der Sender selbst auf.
 **Anzeige ohne Windows testen** (z. B. vor der Kopplung): in `/etc/infodisplay/config.ini`
 `[debug] tcp_test_port = 5099` setzen, Dienst neu starten und auf dem Pi:
 ```bash
-python3 ~/RDash/tools/fake_sender.py --tcp 127.0.0.1:5099 --token <TOKEN> --seconds 120
+python3 ~/infodisplay/tools/fake_sender.py --tcp 127.0.0.1:5099 --token <TOKEN> --seconds 120
 ```
 (Bei Variante B den Ordner `tools` mitkopieren.) Danach `tcp_test_port = 0` zurücksetzen!
 
@@ -361,17 +361,24 @@ Welche Version installiert ist: `cat /opt/infodisplay/VERSION` (Pi) bzw. `CHANGE
 
 Variante A (Projekt mit `git clone` geholt):
 ```bash
-cd ~/RDash
+cd ~/infodisplay
 git pull
 cd pi-display/install
 sudo ./install.sh
 sudo reboot
 ```
-Variante B (ohne git): neue ZIP am PC entpacken, Ordner wie in Abschnitt 3 per `scp` nach `~/RDash/` kopieren
+Variante B (ohne git): neue ZIP am PC entpacken, Ordner wie in Abschnitt 3 per `scp` nach `~/infodisplay/` kopieren
 (alte Dateien werden überschrieben), dann wie oben `sudo ./install.sh` und `sudo reboot`.
 
-Wer bisher nach `~/infodisplay` kopiert hat, kann einfach auf Variante A wechseln (`git clone` wie in
-Abschnitt 3) – der alte Ordner wird nicht mehr gebraucht.
+**Von Variante B auf A wechseln:** Meldet `git pull` den Fehler `fatal: not a git repository`, wurde der Ordner
+per `scp` angelegt. Einmalig neu holen (die Konfiguration liegt in `/etc/infodisplay` und bleibt erhalten):
+```bash
+rm -rf ~/infodisplay
+git clone https://github.com/RookieIVG/RDash.git ~/infodisplay
+cd ~/infodisplay/pi-display/install
+sudo ./install.sh
+sudo reboot
+```
 
 `install.sh` kopiert das Programm neu nach `/opt/infodisplay`, aktualisiert den Dienst und startet ihn neu.
 Der Neustart des Pi sorgt dafür, dass auch die Anzeige im Browser die neue Version lädt.
