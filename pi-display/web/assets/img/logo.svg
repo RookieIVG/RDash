@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 60" role="img" aria-label="Platzhalter für Firmenlogo">
+  <!-- PLATZHALTER: durch das offizielle KAGes-Logo ersetzen (gleicher Dateiname oder [ui] logo anpassen) -->
+  <rect x="1" y="1" width="218" height="58" rx="8" fill="#ffffff" stroke="#007e36" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="110" y="37" text-anchor="middle" font-family="Tahoma, DejaVu Sans, sans-serif" font-size="18" font-weight="bold" fill="#007e36">Firmenlogo</text>
+</svg>

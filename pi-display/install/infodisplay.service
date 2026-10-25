@@ -1,0 +1,31 @@
+[Unit]
+Description=InfoDisplay Empfänger (Bluetooth + lokale Anzeige)
+After=bluetooth.service network.target
+Wants=bluetooth.service
+
+[Service]
+Type=simple
+User=infodisplay
+Group=infodisplay
+WorkingDirectory=/opt/infodisplay
+ExecStart=/usr/bin/python3 /opt/infodisplay/receiver.py --config /etc/infodisplay/config.ini
+Restart=always
+RestartSec=5
+
+# Härtung
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=false
+ReadWritePaths=/var/log/infodisplay
+ReadOnlyPaths=/etc/infodisplay /opt/infodisplay
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_BLUETOOTH
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+LockPersonality=true
+RestrictRealtime=true
+
+[Install]
+WantedBy=multi-user.target
