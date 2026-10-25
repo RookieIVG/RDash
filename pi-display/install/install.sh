@@ -28,6 +28,7 @@ if [[ "${1:-}" == "--uninstall" ]]; then
   rm -f /etc/systemd/system/$SERVICE.service
   systemctl daemon-reload
   rm -rf "$APP_DIR"
+  rm -f /etc/chromium/policies/managed/infodisplay.json
   if [[ -n "$KIOSK_USER" ]]; then
     AUTOSTART="$(getent passwd "$KIOSK_USER" | cut -d: -f6)/.config/labwc/autostart"
     [[ -f "$AUTOSTART" ]] && sed -i '/infodisplay\/kiosk.sh/d' "$AUTOSTART"
@@ -76,6 +77,18 @@ else
 fi
 chown root:"$SVC_USER" "$CONF_FILE"
 chmod 640 "$CONF_FILE"
+
+# ------------------------------------------------------------------ Chromium-Richtlinie
+# Übersetzungs-Popup ("Diese Seite übersetzen?") und Passwort-Abfragen im Kiosk abschalten
+step "Setze Chromium-Richtlinie (keine Übersetzung)"
+install -d -m 755 /etc/chromium/policies/managed
+cat > /etc/chromium/policies/managed/infodisplay.json <<'JSON'
+{
+  "TranslateEnabled": false,
+  "PasswordManagerEnabled": false
+}
+JSON
+chmod 644 /etc/chromium/policies/managed/infodisplay.json
 
 # ------------------------------------------------------------------ Bluetooth
 step "Aktiviere Bluetooth"
