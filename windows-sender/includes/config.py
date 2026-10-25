@@ -50,6 +50,7 @@ _DEFAULTS = {
         "enabled": "false",
         "feeds": "https://rss.orf.at/news.xml",
         "max_headlines": "10",
+        "with_text": "true",
         "refresh_minutes": "15",
     },
     "internet": {
@@ -98,6 +99,7 @@ class SenderConfig:
     news_enabled: bool = False
     feeds: list = field(default_factory=list)
     max_headlines: int = 10
+    news_text: bool = True
     news_refresh_minutes: float = 15
     proxy: str = ""
     web_timeout: float = 15
@@ -153,6 +155,7 @@ def load_config(path=None, require_link=True):
         news_enabled=cp.getboolean("news", "enabled"),
         feeds=[u.strip() for u in cp.get("news", "feeds").replace("\n", ",").split(",") if u.strip()],
         max_headlines=max(1, min(30, cp.getint("news", "max_headlines"))),
+        news_text=cp.getboolean("news", "with_text"),
         news_refresh_minutes=max(5.0, cp.getfloat("news", "refresh_minutes")),
         proxy=cp.get("internet", "proxy").strip(),
         web_timeout=max(3.0, cp.getfloat("internet", "timeout")),

@@ -38,6 +38,8 @@ _DEFAULTS = {
     "ui": {
         "show_seconds": "true",
         "news_seconds": "12",
+        "news_page_seconds": "30",
+        "focus": "calendar",
         "layout": "auto",
         "rotation": "0",
     },
@@ -77,6 +79,8 @@ class ReceiverConfig:
     web_root: str = "/opt/infodisplay/web"
     ui_show_seconds: bool = True
     ui_news_seconds: int = 12
+    ui_news_page_seconds: int = 30
+    ui_focus: str = "calendar"
     ui_layout: str = "auto"
     ui_rotation: int = 0
     tcp_test_port: int = 0
@@ -96,6 +100,7 @@ def load_config(path=None):
     cp.read(path, encoding="utf-8")
 
     layout = cp.get("ui", "layout").strip().lower()
+    focus = cp.get("ui", "focus").strip().lower()
     cfg = ReceiverConfig(
         path=path,
         bt_enabled=cp.getboolean("bluetooth", "enabled"),
@@ -118,6 +123,8 @@ def load_config(path=None):
         web_root=os.path.realpath(cp.get("web", "web_root").strip()),
         ui_show_seconds=cp.getboolean("ui", "show_seconds"),
         ui_news_seconds=max(4, min(120, cp.getint("ui", "news_seconds"))),
+        ui_news_page_seconds=max(5, min(600, cp.getint("ui", "news_page_seconds"))),
+        ui_focus=focus if focus in ("calendar", "news") else "calendar",
         ui_layout=layout if layout in ("auto", "landscape", "portrait") else "auto",
         ui_rotation=cp.getint("ui", "rotation"),
         tcp_test_port=cp.getint("debug", "tcp_test_port"),

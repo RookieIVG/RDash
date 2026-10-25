@@ -87,10 +87,17 @@ def main():
         send(sock, {"type": "weather", "data": {"place": "Graz", "temp": 12.4, "code": 2, "is_day": True,
                                                  "t_max": 15.1, "t_min": 6.3}})
         send(sock, {"type": "news", "data": {"items": [
-            {"title": "Testschlagzeile: Neue Straßenbahnlinie in Graz eröffnet", "source": "Testquelle"},
+            {"title": "Testschlagzeile: Neue Straßenbahnlinie in Graz eröffnet", "source": "Testquelle",
+             "text": "Die neue Linie verbindet ab Montag den Hauptbahnhof mit dem LKH. Fahrgäste profitieren von "
+                     "dichteren Intervallen und neuen Niederflurwagen."},
             {"title": "Zweite Schlagzeile mit etwas längerem Text, damit man sieht, wie lange Überschriften "
                       "auf der Anzeige gekürzt werden", "source": "Testquelle"},
-            {"title": "Dritte Schlagzeile", "source": "Andere Quelle"},
+            {"title": "Dritte Schlagzeile", "source": "Andere Quelle", "text": "Kurzer Text zur dritten Meldung."},
+            {"title": "Vierte Schlagzeile ohne Text", "source": "Andere Quelle"},
+            {"title": "Fünfte Schlagzeile", "source": "Testquelle",
+             "text": "Noch ein Beschreibungstext, damit die Großansicht weiterblättern muss."},
+            {"title": "Sechste Schlagzeile", "source": "Andere Quelle", "text": "Text sechs."},
+            {"title": "Siebte Schlagzeile", "source": "Testquelle", "text": "Text sieben mit etwas mehr Inhalt."},
         ]}})
 
     duration = 214_000

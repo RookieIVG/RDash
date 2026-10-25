@@ -28,6 +28,12 @@ Vollständige Anleitung: `README.md`.
 - Versionierung SemVer in `VERSION`; jede Änderung mit `python tools/bump_version.py <major|minor|patch> "…"`
   (schreibt automatisch `CHANGELOG.md`)
 
+## Arbeitsweise (Wunsch des Auftraggebers)
+- Änderungen nach erfolgreichem Test selbst per Pull Request nach `main` mergen (nicht auf den Nutzer warten)
+- Nach jeder Änderung das komplette Paket als ZIP ausgeben: `git archive --format=zip --prefix=infodisplay/
+  -o infodisplay-<VERSION>.zip origin/main` und dem Nutzer als Datei senden
+- Pfade am Pi in Anleitungen: Projektordner `~/infodisplay` (per `git clone` von GitHub)
+
 ## Testen ohne Hardware
 ```bash
 # Pi-Empfänger lokal: Kopie von pi-display/config/config.example.ini mit

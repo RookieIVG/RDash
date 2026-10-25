@@ -132,7 +132,8 @@ def parse_news(data):
             continue
         title = clean_text(item.get("title"), 200)
         if title:
-            items.append({"title": title, "source": clean_text(item.get("source"), 40)})
+            items.append({"title": title, "source": clean_text(item.get("source"), 40),
+                          "text": clean_text(item.get("text"), 400)})
     return items
 
 
