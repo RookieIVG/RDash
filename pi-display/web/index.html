@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="de" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Info-Display</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/vendor/bootstrap-icons/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <!-- Theme vor dem ersten Zeichnen setzen (kein Aufblitzen) -->
+  <script src="assets/js/theme.js"></script>
+  <script src="assets/js/app.js" defer></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-logo-wrap"><img id="brand-logo" class="brand-logo" src="assets/img/logo.svg" alt="KAGes Logo"></span>
+      <h1 id="app-title" class="brand-title">Info-Display</h1>
+    </div>
+    <div class="header-actions">
+      <span id="link-status" class="status-chip is-off" role="status">
+        <i class="bi bi-bluetooth" aria-hidden="true"></i><span class="status-text">Keine Verbindung</span>
+      </span>
+      <button id="theme-toggle" class="btn btn-icon" type="button" title="Hell/Dunkel umschalten" aria-label="Darstellung umschalten">
+        <i class="bi bi-moon-stars" aria-hidden="true"></i>
+      </button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="card card-media" aria-labelledby="media-heading">
+      <div class="card-head">
+        <h2 id="media-heading"><i class="bi bi-music-note-beamed" aria-hidden="true"></i> Aktuelle Wiedergabe</h2>
+        <span id="media-source" class="source-chip" hidden><i class="bi bi-window" aria-hidden="true"></i><span></span></span>
+      </div>
+
+      <div id="media-body" class="media" hidden>
+        <div class="cover">
+          <img id="cover-img" alt="Albumcover" hidden>
+          <i id="cover-placeholder" class="bi bi-vinyl cover-placeholder" aria-hidden="true"></i>
+        </div>
+        <div class="media-info">
+          <span id="media-status" class="badge"><i class="bi bi-play-fill" aria-hidden="true"></i><span>Wiedergabe</span></span>
+          <p id="media-title" class="media-title"></p>
+          <p id="media-artist" class="media-artist"></p>
+          <p id="media-album" class="media-album"></p>
+          <div id="media-progress" class="progress-wrap">
+            <div class="progress" role="progressbar" aria-label="Fortschritt" aria-valuemin="0" aria-valuemax="100">
+              <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            <div class="progress-times"><span id="time-pos">0:00</span><span id="time-dur">0:00</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="media-empty" class="empty-state">
+        <i id="media-empty-icon" class="bi bi-bluetooth" aria-hidden="true"></i>
+        <p id="media-empty-text">Keine Verbindung zum PC</p>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="card card-clock" aria-label="Uhrzeit">
+        <p id="clock-time" class="clock-time">--:--</p>
+        <p id="clock-date" class="clock-date">&nbsp;</p>
+      </section>
+
+      <section class="card card-calendar" aria-labelledby="calendar-heading">
+        <div class="card-head">
+          <h2 id="calendar-heading"><i class="bi bi-calendar3" aria-hidden="true"></i> Termine</h2>
+          <span id="calendar-stand" class="muted"></span>
+        </div>
+        <ul id="calendar-list" class="events"></ul>
+        <div id="calendar-empty" class="empty-state small">
+          <i class="bi bi-calendar-check" aria-hidden="true"></i>
+          <p id="calendar-empty-text">Noch keine Kalenderdaten</p>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="app-footer">
+    <span><i class="bi bi-display" aria-hidden="true"></i> InfoDisplay <span id="app-version"></span></span>
+    <span id="footer-client"></span>
+    <span id="footer-last"></span>
+  </footer>
+</body>
+</html>
