@@ -59,6 +59,14 @@ if (-not $PyCmd) {
 }
 Write-Host "    gefunden: $($PyCmd -join ' ')"
 
+# ---------------------------------------------------------------- Laufenden Sender beenden (Update)
+# Sonst sind python(w).exe in der venv gesperrt und das Update schlägt fehl
+if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
+    Write-Step "Beende laufenden Sender"
+    Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 2
+}
+
 # ---------------------------------------------------------------- Dateien kopieren
 Write-Step "Kopiere Programm nach $AppDir"
 New-Item -ItemType Directory -Force -Path $AppDir | Out-Null

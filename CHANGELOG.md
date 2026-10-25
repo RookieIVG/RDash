@@ -4,6 +4,14 @@ Alle wesentlichen Änderungen am InfoDisplay. Format nach [Keep a Changelog](htt
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 Neue Einträge werden mit `python tools/bump_version.py` automatisch erzeugt.
 
+## [1.2.0] – 2026-10-25
+
+### Geändert
+- Pi-Anzeige: schlichtes Design – schwarzer Hintergrund, nur Uhr/Datum, Termine und Musik; Logo, Kopf-/Fußzeile und Hell/Dunkel-Umschalter entfernt (Config-Schlüssel title, default_theme, logo entfallen)
+- Pi-Dienst gibt Bluetooth bei jedem Start per rfkill frei und schaltet es ein
+- Windows-Installation beendet vor einem Update den laufenden Sender
+- README: SSH von Windows 11, Bluetooth-Sperre (rfkill), Update auf neue Version, PC-Wechsel, Installation direkt von GitHub
+
 ## [1.1.0] – 2026-10-25
 
 ### Hinzugefügt

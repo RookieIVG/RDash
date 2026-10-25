@@ -25,13 +25,18 @@ zusammen mit **Uhrzeit und Datum** im Vollbild auf einem HDMI-Monitor an.
 4. [Bluetooth koppeln](#4-bluetooth-koppeln)
 5. [Sender auf Windows installieren](#5-sender-auf-windows-installieren)
 6. [Inbetriebnahme und Test](#6-inbetriebnahme-und-test)
-7. [Logo und Schriftart](#7-logo-und-schriftart)
+7. [Anzeige: Design und Hochformat](#7-anzeige-design-und-hochformat)
 8. [Konfiguration](#8-konfiguration)
-9. [Sicherheitskonzept](#9-sicherheitskonzept)
-10. [Fehlersuche](#10-fehlersuche)
-11. [Nachrichtenprotokoll](#11-nachrichtenprotokoll)
-12. [Versionierung und Changelog](#12-versionierung-und-changelog)
-13. [Ordnerstruktur](#13-ordnerstruktur)
+9. [Update auf eine neue Version](#9-update-auf-eine-neue-version)
+10. [PC wechseln (neuen Sender einrichten)](#10-pc-wechseln-neuen-sender-einrichten)
+11. [Sicherheitskonzept](#11-sicherheitskonzept)
+12. [Fehlersuche](#12-fehlersuche)
+13. [Nachrichtenprotokoll](#13-nachrichtenprotokoll)
+14. [Versionierung und Changelog](#14-versionierung-und-changelog)
+15. [Ordnerstruktur](#15-ordnerstruktur)
+
+**Download:** <https://github.com/RookieIVG/RDash> – aktueller Stand als ZIP:
+<https://github.com/RookieIVG/RDash/archive/refs/heads/main.zip> (entpackt heißt der Ordner `RDash-main`).
 
 ---
 
@@ -55,7 +60,7 @@ zusammen mit **Uhrzeit und Datum** im Vollbild auf einem HDMI-Monitor an.
 
 1. Mit dem **Raspberry Pi Imager** „Raspberry Pi OS (64-bit)“ (mit Desktop) auf die SD-Karte schreiben.
    In den Imager-Einstellungen Benutzer, WLAN/LAN, Zeitzone **Europe/Vienna** und SSH aktivieren.
-2. Pi starten, per SSH anmelden und aktualisieren:
+2. Pi starten, per SSH anmelden (siehe 2.1) und aktualisieren:
    ```bash
    sudo apt update && sudo apt full-upgrade -y
    sudo reboot
@@ -65,24 +70,102 @@ zusammen mit **Uhrzeit und Datum** im Vollbild auf einem HDMI-Monitor an.
    bluetoothctl show
    ```
    Die Zeile `Controller XX:XX:XX:XX:XX:XX` zeigt die **Bluetooth-Adresse des Pi** – die brauchst du später.
+   Steht bei `Powered: no` und `bluetoothctl power on` meldet `Failed to set power on: org.bluez.Error.Failed`,
+   ist Bluetooth gesperrt → siehe 2.2.
+
+### 2.1 Per SSH von Windows 11 verbinden
+
+Windows 11 hat SSH eingebaut – einfach **PowerShell** oder **Terminal** öffnen.
+
+**SSH am Pi einschalten** (falls nicht schon im Imager unter *Dienste → SSH aktivieren* gesetzt):
+am Pi selbst (Tastatur/Monitor) ein Terminal öffnen und
+```bash
+sudo systemctl enable --now ssh
+```
+(oder `sudo raspi-config` → *Interface Options* → *SSH* → *Yes*).
+
+**Adresse des Pi:** meist `raspberrypi.local` (bzw. der im Imager vergebene Hostname). Sonst am Pi
+`hostname -I` eingeben oder in der Geräteliste des Routers nachsehen (z. B. `192.168.1.50`).
+
+**Verbinden:**
+```powershell
+ssh benutzer@raspberrypi.local
+# oder mit IP:
+ssh benutzer@192.168.1.50
+```
+Beim ersten Mal die Frage `Are you sure you want to continue connecting` mit `yes` bestätigen, dann das Passwort
+eingeben (beim Tippen erscheinen keine Zeichen – das ist normal). Beenden mit `exit`.
+
+**Dateien kopieren** (vom PC zum Pi):
+```powershell
+scp -r .\ordner benutzer@raspberrypi.local:~/ziel/
+```
+
+**Optional – Anmeldung ohne Passwort (SSH-Schlüssel)**, einmalig in PowerShell:
+```powershell
+ssh-keygen -t ed25519            # Enter drücken, optional eine Passphrase vergeben
+type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh benutzer@raspberrypi.local "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+```
+Kurzname: in `%USERPROFILE%\.ssh\config` eintragen
+```
+Host pi
+    HostName raspberrypi.local
+    User benutzer
+```
+→ danach genügt `ssh pi` bzw. `scp datei pi:~/`.
+
+| SSH-Meldung | Lösung |
+|---|---|
+| `Could not resolve hostname raspberrypi.local` | IP-Adresse statt `.local` verwenden (in Firmennetzen klappt `.local` oft nicht) |
+| `Connection refused` | SSH am Pi nicht aktiv → siehe oben |
+| `Connection timed out` | Pi und PC nicht im selben Netz oder Firewall sperrt Port 22 (ggf. IT fragen) |
+| `REMOTE HOST IDENTIFICATION HAS CHANGED` | Pi wurde neu aufgesetzt: `ssh-keygen -R raspberrypi.local` (bzw. IP), dann neu verbinden |
+| `Permission denied` | Benutzername/Passwort falsch – es gilt der im Imager angelegte Benutzer |
+
+### 2.2 Bluetooth gesperrt („Failed to set power on“)
+
+```bash
+rfkill list
+```
+Steht bei `hci0: Bluetooth` die Zeile **`Soft blocked: yes`**, ist Bluetooth per Software gesperrt. Freigeben:
+```bash
+sudo rfkill unblock bluetooth
+bluetoothctl power on            # -> Changing power on succeeded
+sudo systemctl restart infodisplay   # nur falls schon installiert
+```
+Der InfoDisplay-Dienst gibt Bluetooth ab Version 1.2.0 bei jedem Start selbst frei. Wird es trotzdem wieder
+gesperrt, am Pi-Desktop über das Bluetooth-Symbol oben rechts „Bluetooth einschalten“ wählen.
+
+Hilft das nicht:
+```bash
+sudo systemctl restart bluetooth
+bluetoothctl list                         # leer = kein Adapter erkannt
+grep -n -i "bt" /boot/firmware/config.txt # steht dort dtoverlay=disable-bt -> Zeile mit # auskommentieren, Neustart
+sudo btmgmt power on                      # genauere Fehlermeldung
+```
 
 ---
 
 ## 3. Empfänger auf dem Pi installieren
 
-1. Ordner `pi-display` und die Datei `VERSION` auf den Pi kopieren (vom Windows-PC aus, im entpackten Projektordner):
+1. Projekt auf den Pi holen – **Variante A (empfohlen): direkt am Pi von GitHub**:
+   ```bash
+   sudo apt install -y git
+   git clone https://github.com/RookieIVG/RDash.git ~/RDash
+   ```
+   **Variante B: vom Windows-PC kopieren** (im entpackten Projektordner, siehe 2.1):
    ```powershell
-   scp -r .\pi-display .\VERSION benutzer@<pi-ip>:~/infodisplay/
+   scp -r .\pi-display .\VERSION .\tools benutzer@raspberrypi.local:~/RDash/
    ```
 2. Auf dem Pi installieren – **als normaler Desktop-Benutzer mit sudo** (nicht als root anmelden),
    damit der Kiosk-Autostart für diesen Benutzer eingerichtet wird:
    ```bash
-   cd ~/infodisplay/pi-display/install
+   cd ~/RDash/pi-display/install
    chmod +x install.sh
    sudo ./install.sh
    ```
 3. Das Skript erledigt:
-   - Pakete `python3`, `bluez`, `chromium`, `curl`
+   - Pakete `python3`, `bluez`, `chromium`, `curl`, `wlr-randr`
    - Dienstbenutzer `infodisplay`, Programm nach `/opt/infodisplay`
    - Konfiguration nach `/etc/infodisplay/config.ini` mit **neu erzeugtem Token** (Rechte 640)
    - systemd-Dienst `infodisplay` (startet automatisch)
@@ -161,7 +244,7 @@ baut der Sender selbst auf.
 5. Notepad öffnet die Konfiguration. Eintragen:
    ```ini
    [link]
-   pi_mac  = B8:27:EB:12:34:56      ; Bluetooth-Adresse des Pi (Schritt 3)
+   pi_mac  = B8:27:EB:12:34:56      ; Bluetooth-Adresse des Pi (Abschnitt 3)
    channel = 22
    token   = <Token vom Pi>
    ```
@@ -176,7 +259,7 @@ baut der Sender selbst auf.
    Start-ScheduledTask -TaskName "InfoDisplay Sender"
    ```
 
-**Update:** neue Version entpacken und `install.ps1` erneut ausführen (Konfiguration bleibt erhalten).
+**Update:** siehe Abschnitt 9. **PC wechseln:** siehe Abschnitt 10.
 **Deinstallation:** `.\install.ps1 -Uninstall`
 
 ---
@@ -184,35 +267,44 @@ baut der Sender selbst auf.
 ## 6. Inbetriebnahme und Test
 
 1. Pi neu starten: `sudo reboot` – nach dem Hochfahren öffnet sich die Anzeige im Vollbild.
-2. Auf dem PC Musik abspielen. Innerhalb von 1–2 Sekunden erscheinen Titel und Cover,
-   oben rechts steht **„Verbunden – <PC-Name>“**.
+2. Auf dem PC Musik abspielen. Innerhalb von 1–2 Sekunden erscheinen Titel und Cover.
+   Ohne Verbindung zeigt die Anzeige „Keine Verbindung zum PC“ (Hochformat: nur Uhr und Datum).
 3. Termine erscheinen spätestens nach 5 Minuten (bzw. sofort nach dem Verbinden).
 
 **Anzeige ohne Windows testen** (z. B. vor der Kopplung): in `/etc/infodisplay/config.ini`
 `[debug] tcp_test_port = 5099` setzen, Dienst neu starten und auf dem Pi:
 ```bash
-python3 ~/infodisplay/tools/fake_sender.py --tcp 127.0.0.1:5099 --token <TOKEN> --seconds 120
+python3 ~/RDash/tools/fake_sender.py --tcp 127.0.0.1:5099 --token <TOKEN> --seconds 120
 ```
-(Ordner `tools` dafür ebenfalls auf den Pi kopieren.) Danach `tcp_test_port = 0` zurücksetzen!
+(Bei Variante B den Ordner `tools` mitkopieren.) Danach `tcp_test_port = 0` zurücksetzen!
 
 ---
 
-## 7. Logo und Schriftart
+## 7. Anzeige: Design und Hochformat
 
-**Logo:** `web/assets/img/logo.svg` ist ein **Platzhalter**. Das offizielle KAGes-Logo (SVG oder PNG) aus der
-Unternehmenskommunikation unter demselben Namen ablegen – oder in der config `[ui] logo = assets/img/kages.png`
-setzen. Danach `sudo ./install.sh` erneut ausführen (oder Datei direkt nach `/opt/infodisplay/web/assets/img/` kopieren).
+**Design:** bewusst schlicht – schwarzer Hintergrund, weiße Schrift, keine Kopf- oder Fußzeile, kein Logo.
+Angezeigt werden nur Uhrzeit/Datum, Termine und die aktuelle Musik. Icons: Bootstrap Icons (lokal eingebunden,
+keine Internetverbindung nötig). Schrift: Systemschrift des Pi (DejaVu Sans).
 
-**Schrift Tahoma:** Tahoma ist eine Microsoft-Schrift und auf dem Pi nicht vorhanden (Ersatz: DejaVu Sans).
-Mit gültiger Windows-Lizenz die Dateien `tahoma.ttf` und `tahomabd.ttf` aus `C:\Windows\Fonts` auf den Pi kopieren:
-```bash
-sudo mkdir -p /usr/local/share/fonts/tahoma
-sudo cp tahoma.ttf tahomabd.ttf /usr/local/share/fonts/tahoma/
-sudo fc-cache -f
+| Format | Anordnung |
+|---|---|
+| Querformat (1920×1080) | Musik links, Uhr/Datum und Termine rechts |
+| Hochformat (1080×1920) | Uhr/Datum oben, Termine in der Mitte, Musik unten |
+| Hochformat ohne Verbindung zum PC | Nur Uhr und Datum, groß und zentriert |
+
+### Hochformat einrichten
+
+Einrichten in `/etc/infodisplay/config.ini`:
+```ini
+[ui]
+layout   = auto     ; erkennt das Hochformat selbst, "portrait" erzwingt es
+rotation = 90       ; steht das Bild auf dem Kopf: 270
 ```
-
-**Design:** Hauptfarbe RGB 0|126|54, Detailfarbe RGB 22|159|219, Icons: Bootstrap Icons (lokal eingebunden,
-keine Internetverbindung nötig). Hell/Dunkel über den Mond/Sonne-Knopf oben rechts oder `[ui] default_theme`.
+Danach `sudo systemctl restart infodisplay` und `sudo reboot`. Die Drehung setzt `kiosk.sh` beim Start der
+Anzeige mit `wlr-randr` (wird von `install.sh` installiert). Gibt es mehrere Bildschirme, den Ausgang in
+`~/.config/labwc/autostart` vorgeben: `INFODISPLAY_OUTPUT=HDMI-A-1 /opt/infodisplay/kiosk.sh &`.
+Alternativ lässt sich die Drehung auch am Pi-Desktop unter *Einstellungen → Bildschirmkonfiguration* einstellen –
+dann `rotation = 0` lassen.
 
 ---
 
@@ -229,35 +321,13 @@ keine Internetverbindung nötig). Hell/Dunkel über den Mond/Sonne-Knopf oben re
 | security | `idle_timeout` | 120 | Trennen nach x s ohne Lebenszeichen |
 | security | `http_rate_per_sec` | 20 | Rate-Limit Webserver |
 | web | `host` / `port` | 127.0.0.1 / 8080 | Webserver nur lokal |
-| ui | `title` | Info-Display | Überschrift im Header |
-| ui | `default_theme` | auto | `auto`, `light` oder `dark` |
 | ui | `show_seconds` | true | Sekunden in der Uhr |
-| ui | `layout` | auto | `auto` (nach Bildschirmform), `landscape` oder `portrait` – siehe unten |
+| ui | `layout` | auto | `auto` (nach Bildschirmform), `landscape` oder `portrait` – siehe Abschnitt 7 |
 | ui | `rotation` | 0 | Bildschirm drehen: `0`, `90`, `180`, `270` (Hochformat: `90` oder `270`) |
 | debug | `tcp_test_port` | 0 | TCP-Testzugang (nur zum Testen) |
 | logging | `file` / `level` | /var/log/infodisplay/… / INFO | Zentrales Log |
 
 Nach Änderungen: `sudo systemctl restart infodisplay`
-
-### Hochformat (Monitor hochkant, 1080×1920)
-
-| Format | Anordnung |
-|---|---|
-| Querformat | Musik links, Uhr/Datum und Termine rechts |
-| Hochformat | Uhr/Datum oben, Termine in der Mitte, Musik unten |
-| Hochformat ohne Verbindung zum PC | Nur Uhr und Datum, groß und zentriert |
-
-Einrichten in `/etc/infodisplay/config.ini`:
-```ini
-[ui]
-layout   = auto     ; erkennt das Hochformat selbst, "portrait" erzwingt es
-rotation = 90       ; steht das Bild auf dem Kopf: 270
-```
-Danach `sudo systemctl restart infodisplay` und `sudo reboot`. Die Drehung setzt `kiosk.sh` beim Start der
-Anzeige mit `wlr-randr` (wird von `install.sh` installiert). Gibt es mehrere Bildschirme, den Ausgang in
-`~/.config/labwc/autostart` vorgeben: `INFODISPLAY_OUTPUT=HDMI-A-1 /opt/infodisplay/kiosk.sh &`.
-Alternativ lässt sich die Drehung auch am Pi-Desktop unter *Einstellungen → Bildschirmkonfiguration* einstellen –
-dann `rotation = 0` lassen.
 
 ### Windows – `%APPDATA%\InfoDisplay\config.ini`
 
@@ -281,7 +351,93 @@ Nach Änderungen: Aufgabe neu starten
 
 ---
 
-## 9. Sicherheitskonzept
+## 9. Update auf eine neue Version
+
+Bei einem Update bleiben die Konfigurationen erhalten (`/etc/infodisplay/config.ini` am Pi,
+`%APPDATA%\InfoDisplay\config.ini` am PC) – Token und Kopplung müssen **nicht** neu eingerichtet werden.
+Welche Version installiert ist: `cat /opt/infodisplay/VERSION` (Pi) bzw. `CHANGELOG.md` für die Änderungen.
+
+### Pi
+
+Variante A (Projekt mit `git clone` geholt):
+```bash
+cd ~/RDash
+git pull
+cd pi-display/install
+sudo ./install.sh
+sudo reboot
+```
+Variante B (ohne git): neue ZIP am PC entpacken, Ordner wie in Abschnitt 3 per `scp` nach `~/RDash/` kopieren
+(alte Dateien werden überschrieben), dann wie oben `sudo ./install.sh` und `sudo reboot`.
+
+Wer bisher nach `~/infodisplay` kopiert hat, kann einfach auf Variante A wechseln (`git clone` wie in
+Abschnitt 3) – der alte Ordner wird nicht mehr gebraucht.
+
+`install.sh` kopiert das Programm neu nach `/opt/infodisplay`, aktualisiert den Dienst und startet ihn neu.
+Der Neustart des Pi sorgt dafür, dass auch die Anzeige im Browser die neue Version lädt.
+
+> Neue Einstellungen einer Version stehen in `pi-display/config/config.example.ini` und im `CHANGELOG.md`.
+> Sie werden **nicht** automatisch in die bestehende Config übernommen – bei Bedarf von Hand in
+> `/etc/infodisplay/config.ini` ergänzen (fehlende Einträge verwenden den Standardwert).
+
+### Windows-PC
+
+1. Neue ZIP herunterladen (Link oben) und entpacken, z. B. nach `C:\Tools\infodisplay` (alten Ordner ersetzen).
+2. PowerShell als normaler Benutzer:
+   ```powershell
+   cd C:\Tools\infodisplay\windows-sender
+   powershell -ExecutionPolicy Bypass -File .\install.ps1
+   ```
+   Das Skript beendet den laufenden Sender, aktualisiert Programm und Pakete und startet ihn wieder.
+
+Pi und PC sollten auf derselben Version laufen (Protokollversion `v = 1` muss gleich sein).
+
+---
+
+## 10. PC wechseln (neuen Sender einrichten)
+
+Wenn ein anderer Windows-PC die Daten senden soll (neuer Arbeitsplatz, Tausch-PC):
+
+**1. Neuen PC am Pi koppeln** – wie Abschnitt 4 (Bluetooth koppeln), mit dem neuen PC.
+
+**2. Sender am neuen PC installieren** – wie Abschnitt 5. In die Config dieselben Werte wie bisher eintragen:
+`pi_mac`, `channel` und `token` (am Pi nachsehen):
+```bash
+sudo grep -E '^(channel|token)' /etc/infodisplay/config.ini
+bluetoothctl show | head -1
+```
+
+**3. Allowlist anpassen** (nur falls `allowed_macs` gesetzt ist): in `/etc/infodisplay/config.ini` die
+Bluetooth-Adresse des neuen PCs eintragen bzw. die alte ersetzen, dann `sudo systemctl restart infodisplay`.
+Die Adresse des neuen PCs zeigt `bluetoothctl devices` am Pi.
+
+**4. Alten PC entfernen:**
+- Am alten PC: `.\install.ps1 -Uninstall` im Ordner `windows-sender` und unter *Einstellungen → Bluetooth und
+  Geräte* den Pi entfernen.
+- Am Pi die alte Kopplung löschen:
+  ```bash
+  bluetoothctl devices                 # Adresse des alten PCs suchen
+  bluetoothctl remove AA:BB:CC:DD:EE:FF
+  ```
+
+**5. Optional – neuen Token erzeugen** (empfohlen, wenn der alte PC weitergegeben wird oder der Token
+bekannt geworden ist):
+```bash
+NEU=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')
+sudo sed -i "s|^token = .*|token = $NEU|" /etc/infodisplay/config.ini
+sudo systemctl restart infodisplay
+echo "$NEU"
+```
+Den neuen Token in `%APPDATA%\InfoDisplay\config.ini` am neuen PC eintragen und den Sender neu starten
+(`Stop-ScheduledTask "InfoDisplay Sender"; Start-ScheduledTask "InfoDisplay Sender"`).
+
+> **Wichtig:** Der Pi nimmt immer nur **einen** Sender an – meldet sich ein zweiter an, ersetzt er den ersten.
+> Läuft der Sender am alten PC weiter, verdrängen sich beide PCs ständig gegenseitig. Deshalb Schritt 4 nicht
+> auslassen (oder den alten PC über `allowed_macs` bzw. einen neuen Token aussperren).
+
+---
+
+## 11. Sicherheitskonzept
 
 | Maßnahme | Umsetzung |
 |---|---|
@@ -301,7 +457,7 @@ Browser, keine schreibenden Endpunkte). Die Bluetooth-Verbindung ist durch die K
 
 ---
 
-## 10. Fehlersuche
+## 12. Fehlersuche
 
 | Problem | Lösung |
 |---|---|
@@ -312,6 +468,7 @@ Browser, keine schreibenden Endpunkte). Die Bluetooth-Verbindung ist durch die K
 | Musik wird nicht erkannt | Nicht jede App meldet sich bei Windows. Test mit `--test`; ggf. `preferred_apps` leeren |
 | Kein Cover | Manche Apps (z. B. Browser) liefern kein Cover → Platzhalter wird angezeigt |
 | Keine Termine | Läuft Outlook (Classic)? `start_outlook = true` setzen. Log auf „Datumsformat“ prüfen |
+| `Failed to set power on: org.bluez.Error.Failed` | Bluetooth per rfkill gesperrt → Abschnitt 2.2 |
 | Kopplung schlägt fehl | Auf dem Pi `bluetoothctl` → `remove <PC-MAC>`, in Windows Gerät entfernen, Schritt 4 wiederholen |
 | Hochformat-Bild verdreht oder nicht gedreht | `rotation` auf `270` statt `90` setzen; Ausgangsname prüfen: `wlr-randr` in einem Terminal am Pi-Desktop |
 | Schwarzer Bildschirm | `curl 127.0.0.1:8080/healthz`; Autostart: `cat ~/.config/labwc/autostart` |
@@ -322,7 +479,7 @@ Browser, keine schreibenden Endpunkte). Die Bluetooth-Verbindung ist durch die K
 
 ---
 
-## 11. Nachrichtenprotokoll
+## 13. Nachrichtenprotokoll
 
 Eine JSON-Nachricht pro Zeile (UTF-8, abgeschlossen mit `\n`), Protokollversion `v = 1`.
 
@@ -341,7 +498,7 @@ Sender-Modul in `windows-sender/includes`, Prüfung in `pi-display/includes/prot
 
 ---
 
-## 12. Versionierung und Changelog
+## 14. Versionierung und Changelog
 
 Versionen nach **Semantic Versioning** (`MAJOR.MINOR.PATCH`) in der Datei `VERSION`.
 Version und Changelog werden gemeinsam erhöht:
@@ -352,11 +509,11 @@ python tools/bump_version.py minor "Anzeige der CPU-Auslastung"
 python tools/bump_version.py major "Protokoll v2"
 ```
 
-Die Versionsnummer erscheint in der Fußzeile der Anzeige und in beiden Logs.
+Die Versionsnummer steht in beiden Logs, am Pi in `/opt/infodisplay/VERSION` und unter `http://127.0.0.1:8080/api/state`.
 
 ---
 
-## 13. Ordnerstruktur
+## 15. Ordnerstruktur
 
 ```
 infodisplay/

@@ -52,20 +52,7 @@
     if (node && node.textContent !== text) { node.textContent = text; }
   }
 
-  // ---------------------------------------------------------------- Kopf & Fuß
-  function renderChrome() {
-    var ui = state.ui || {};
-    setText("app-title", ui.title || "Info-Display");
-    document.title = ui.title || "Info-Display";
-    setText("app-version", "v" + ((state.app && state.app.version) || "?"));
-    if (ui.logo && /^[\w\-./]+\.(svg|png|jpe?g)$/i.test(ui.logo) && ui.logo.indexOf("..") === -1) {
-      var logo = $("brand-logo");
-      if (logo.getAttribute("src") !== ui.logo) { logo.setAttribute("src", ui.logo); }
-    }
-    if (window.InfoTheme) { window.InfoTheme.setDefault(ui.default_theme || "auto"); }
-    applyLayout();
-  }
-
+  // ---------------------------------------------------------------- Layout & Ruhemodus
   // Hochformat: per Config erzwungen oder (auto) wenn der Bildschirm höher als breit ist.
   // Die Breitengrenze verhindert, dass Handys im Hochformat das Kiosk-Layout bekommen.
   function applyLayout() {
@@ -81,59 +68,33 @@
     document.body.classList.toggle("is-idle", !connected);
   }
 
-  function renderLink() {
-    var chip = $("link-status");
-    var text = chip.querySelector(".status-text");
-    var link = state ? state.link : null;
-    var cls, label;
-    if (!serverReachable) {
-      cls = "is-warn"; label = "Anzeige-Dienst nicht erreichbar";
-    } else if (link && link.connected) {
-      cls = "is-on"; label = "Verbunden" + (link.client ? " – " + link.client : "");
-    } else {
-      cls = "is-off"; label = "Keine Verbindung";
-    }
-    chip.className = "status-chip " + cls;
-    text.textContent = label;
-    setText("footer-client", link && link.client ? "Sender: " + link.client : "");
-    renderIdle();
-  }
-
-  function renderFooterAge() {
-    var link = state && state.link;
-    if (!link || !link.last_message_ms) { setText("footer-last", "Noch keine Daten empfangen"); return; }
-    var age = Math.max(0, Math.round((serverNow() - link.last_message_ms) / 1000));
-    var label = age < 5 ? "gerade eben" : age < 120 ? "vor " + age + " s" : "vor " + Math.round(age / 60) + " min";
-    setText("footer-last", "Letzte Daten: " + label);
-  }
-
   // ---------------------------------------------------------------- Musik
   var STATUS = {
-    playing: { icon: "play-fill", text: "Wiedergabe", cls: "badge is-playing" },
-    paused: { icon: "pause-fill", text: "Pausiert", cls: "badge" },
-    stopped: { icon: "stop-fill", text: "Gestoppt", cls: "badge" }
+    playing: { icon: "play-fill", text: "Wiedergabe" },
+    paused: { icon: "pause-fill", text: "Pausiert" },
+    stopped: { icon: "stop-fill", text: "Gestoppt" }
   };
 
   function renderMedia() {
     var media = state.media || {};
-    var connected = state.link && state.link.connected;
+    var connected = serverReachable && state.link && state.link.connected;
     var show = connected && media.active;
 
     $("media-body").hidden = !show;
     $("media-empty").hidden = show;
-    $("media-source").hidden = !show || !media.source_app;
     if (!show) {
-      $("media-empty-icon").className = "bi " + (connected ? "bi-pause-circle" : "bi-bluetooth");
-      setText("media-empty-text", connected ? "Keine Wiedergabe aktiv" : "Keine Verbindung zum PC");
+      setText("media-empty", !serverReachable ? "Anzeige-Dienst nicht erreichbar"
+        : connected ? "Keine Wiedergabe aktiv" : "Keine Verbindung zum PC");
       return;
     }
 
-    $("media-source").querySelector("span").textContent = media.source_app || "";
+    // Statuszeile: "▶ Spotify" bzw. "⏸ Pausiert · Spotify"
     var st = STATUS[media.status] || STATUS.stopped;
-    var badge = $("media-status");
-    badge.className = st.cls;
-    badge.querySelector(".bi").className = "bi bi-" + st.icon;
-    badge.querySelector("span").textContent = st.text;
+    var label = media.status === "playing" && media.source_app ? media.source_app
+      : st.text + (media.source_app ? " · " + media.source_app : "");
+    var status = $("media-status");
+    status.querySelector(".bi").className = "bi bi-" + st.icon;
+    setText("media-status-text", label);
 
     setText("media-title", media.title || "Unbekannter Titel");
     setText("media-artist", media.artist || "");
@@ -214,13 +175,12 @@
     if (signature === lastCalendarRender) { return; }
     lastCalendarRender = signature;
 
-    setText("calendar-stand", cal && cal.received_ms ? "Stand " + timeText(new Date(cal.received_ms)) : "");
     list.textContent = "";
 
     if (!upcoming.length) {
       list.hidden = true;
       $("calendar-empty").hidden = false;
-      setText("calendar-empty-text", cal && cal.events ? "Keine weiteren Termine" : "Noch keine Kalenderdaten");
+      setText("calendar-empty", cal && cal.events ? "Keine weiteren Termine" : "Noch keine Kalenderdaten");
       return;
     }
     list.hidden = false;
@@ -265,24 +225,16 @@
     state = snapshot;
     serverReachable = true;
     if (typeof snapshot.server_now_ms === "number") { clockOffset = snapshot.server_now_ms - Date.now(); }
-    renderChrome();
-    renderLink();
+    applyLayout();
+    renderIdle();
     renderMedia();
     renderCalendar();
-    renderFooterAge();
   }
 
   function markUnreachable() {
     serverReachable = false;
-    if (state) { renderLink(); }
-    else { renderLinkWithoutState(); }
-  }
-
-  function renderLinkWithoutState() {
-    var chip = $("link-status");
-    chip.className = "status-chip is-warn";
-    chip.querySelector(".status-text").textContent = "Anzeige-Dienst nicht erreichbar";
     renderIdle();
+    if (state) { renderMedia(); }
   }
 
   function poll() {
@@ -310,13 +262,14 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+    if (/[?&]kiosk=1\b/.test(window.location.search)) { document.body.classList.add("kiosk"); }
     applyLayout();
     renderIdle();
     window.addEventListener("resize", applyLayout);
     tickClock();
     setInterval(tickClock, 1000);
     setInterval(tickProgress, 250);
-    setInterval(function () { if (state) { renderCalendar(); renderFooterAge(); } }, 1000);
+    setInterval(function () { if (state) { renderCalendar(); } }, 1000);
     connect();
   });
 })();

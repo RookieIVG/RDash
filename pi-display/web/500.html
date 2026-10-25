@@ -1,36 +1,20 @@
 <!doctype html>
-<html lang="de" data-theme="light">
+<html lang="de">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Fehler – Info-Display</title>
+  <meta name="color-scheme" content="dark">
+  <title>Interner Fehler – InfoDisplay</title>
   <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/assets/vendor/bootstrap-icons/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/assets/css/style.css">
-  <script src="/assets/js/theme.js"></script>
 </head>
 <body>
-  <header class="app-header">
-    <div class="brand">
-      <span class="brand-logo-wrap"><img class="brand-logo" src="/assets/img/logo.svg" alt="KAGes Logo"></span>
-      <h1 class="brand-title">Info-Display</h1>
-    </div>
-    <div class="header-actions">
-      <button id="theme-toggle" class="btn btn-icon" type="button" aria-label="Darstellung umschalten">
-        <i class="bi bi-moon-stars" aria-hidden="true"></i>
-      </button>
-    </div>
-  </header>
   <main class="error-page">
-    <section class="card error-card">
+    <div>
       <p class="error-code">500</p>
-      <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
-      <h2>Interner Fehler</h2>
-      <p class="muted">Beim Verarbeiten der Anfrage ist ein Fehler aufgetreten. Details stehen im Log
-        (<code>/var/log/infodisplay/infodisplay.log</code>).</p>
-      <a class="btn btn-primary" href="/"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Erneut versuchen</a>
-    </section>
+      <p>Interner Fehler. Details stehen im Log (/var/log/infodisplay/infodisplay.log).</p>
+      <p><a href="/">Erneut versuchen</a></p>
+    </div>
   </main>
-  <footer class="app-footer"><span><i class="bi bi-display" aria-hidden="true"></i> InfoDisplay</span></footer>
 </body>
 </html>
