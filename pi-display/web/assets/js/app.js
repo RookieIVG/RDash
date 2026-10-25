@@ -177,14 +177,9 @@
 
     list.textContent = "";
 
-    if (!upcoming.length) {
-      list.hidden = true;
-      $("calendar-empty").hidden = false;
-      setText("calendar-empty", cal && cal.events ? "Keine weiteren Termine" : "Noch keine Kalenderdaten");
-      return;
-    }
-    list.hidden = false;
-    $("calendar-empty").hidden = true;
+    // Keine (weiteren) Termine oder kein Kalender: Bereich ganz ausblenden, keine Meldung
+    document.body.classList.toggle("no-events", !upcoming.length);
+    if (!upcoming.length) { return; }
 
     var lastDay = null;
     upcoming.forEach(function (x) {

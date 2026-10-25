@@ -49,6 +49,7 @@ def main():
     parser.add_argument("--channel", type=int, default=22)
     parser.add_argument("--token", required=True)
     parser.add_argument("--seconds", type=int, default=30, help="Wie lange Daten gesendet werden")
+    parser.add_argument("--no-calendar", action="store_true", help="Keine Kalenderdaten senden (wie ohne Outlook)")
     args = parser.parse_args()
 
     if args.tcp:
@@ -70,15 +71,16 @@ def main():
                                            "b64": base64.b64encode(png).decode()}})
     now = datetime.now().replace(second=0, microsecond=0)
     fmt = "%Y-%m-%dT%H:%M"
-    send(sock, {"type": "calendar", "data": {"events": [
-        {"subject": "Jour fixe IT", "location": "Besprechungsraum 2", "start": (now - timedelta(minutes=20)).strftime(fmt),
-         "end": (now + timedelta(minutes=25)).strftime(fmt), "all_day": False},
-        {"subject": "KLISAT Wartungsfenster", "location": "", "start": (now + timedelta(hours=2)).strftime(fmt),
-         "end": (now + timedelta(hours=3)).strftime(fmt), "all_day": False},
-        {"subject": "Schulung Datenschutz", "location": "Online (Teams)",
-         "start": (now + timedelta(days=1)).replace(hour=9, minute=0).strftime(fmt),
-         "end": (now + timedelta(days=1)).replace(hour=10, minute=30).strftime(fmt), "all_day": False},
-    ]}})
+    if not args.no_calendar:
+        send(sock, {"type": "calendar", "data": {"events": [
+            {"subject": "Jour fixe IT", "location": "Besprechungsraum 2", "start": (now - timedelta(minutes=20)).strftime(fmt),
+             "end": (now + timedelta(minutes=25)).strftime(fmt), "all_day": False},
+            {"subject": "KLISAT Wartungsfenster", "location": "", "start": (now + timedelta(hours=2)).strftime(fmt),
+             "end": (now + timedelta(hours=3)).strftime(fmt), "all_day": False},
+            {"subject": "Schulung Datenschutz", "location": "Online (Teams)",
+             "start": (now + timedelta(days=1)).replace(hour=9, minute=0).strftime(fmt),
+             "end": (now + timedelta(days=1)).replace(hour=10, minute=30).strftime(fmt), "all_day": False},
+        ]}})
 
     duration = 214_000
     start = time.time()

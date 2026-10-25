@@ -45,7 +45,7 @@ if [ -z "$BROWSER" ]; then
   exit 1
 fi
 
-exec "$BROWSER" \
+"$BROWSER" \
   --kiosk \
   --noerrdialogs \
   --disable-infobars \
@@ -56,4 +56,19 @@ exec "$BROWSER" \
   --password-store=basic \
   --no-first-run \
   --start-fullscreen \
-  "$URL"
+  "$URL" &
+BROWSER_PID=$!
+
+# ------------------------------------------------------------------ Mauszeiger ausblenden
+# Die Seite blendet den Zeiger per CSS aus, Chromium übernimmt das aber erst nach einer Mausbewegung.
+# wlrctl erzeugt diese Bewegung und schiebt den Zeiger zusätzlich in die Ecke unten rechts.
+if command -v wlrctl >/dev/null; then
+  for _ in 1 2 3; do
+    sleep 5
+    wlrctl pointer move 10000 10000 2>/dev/null || break
+  done
+else
+  echo "wlrctl fehlt – Mauszeiger wird erst nach einer Mausbewegung ausgeblendet" >&2
+fi
+
+wait "$BROWSER_PID"
