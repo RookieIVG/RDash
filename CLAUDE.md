@@ -15,10 +15,12 @@ Vollständige Anleitung: `README.md`.
 - UI-Sprache Deutsch; Code-Kommentare Deutsch; README Deutsch
 - Design der Anzeige (Entscheidung des Auftraggebers, ab 1.2.0): **schlicht, kein Firmendesign** – nur schwarzer
   Hintergrund mit weißer/grauer Schrift, kein Logo, keine Kopf-/Fußzeile, kein Hell/Dunkel-Umschalter
-- Layouts: Querformat 1920×1080, Hochformat 1080×1920 (Uhr/Datum oben, Termine, Musik unten; ohne Verbindung nur
-  Uhr/Datum zentriert) und Mobilgeräte
+- Layouts: Querformat 1920×1080, Hochformat 1080×1920 in Dritteln (oben Uhr/Datum/Wetter, Mitte Schlagzeilen
+  bzw. Termine, unten Musik) und Mobilgeräte; ohne Verbindung in allen Formaten nur die Uhr als Bildschirmschoner
+  (wandert und prallt an den Rändern ab)
 - Nutzer-relevante Änderungen (Bedienung, Installation, Update, Fehlersuche) immer auch im README nachziehen
-- Icons: Bootstrap Icons (lokal unter `web/assets/vendor/bootstrap-icons/`, keine CDNs – CSP erlaubt nur `'self'`)
+- Icons: Bootstrap Icons (lokal unter `web/assets/vendor/bootstrap-icons/`), Wetter: animierte Meteocons (MIT, lokal
+  unter `web/assets/vendor/meteocons/`) – keine CDNs, CSP erlaubt nur `'self'`
 - Einheitliche Fehlerseiten 404/500 im selben schlichten Design
 - Zentrales Logging über `includes/logger.py` (`get_logger("<modul>")`), nie `print` im Betrieb
 - Zugangsdaten/Token nur in Config-Dateien außerhalb des Web-Roots (`/etc/infodisplay`, `%APPDATA%\InfoDisplay`), nie im Code
