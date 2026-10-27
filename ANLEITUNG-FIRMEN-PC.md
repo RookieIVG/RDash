@@ -317,7 +317,7 @@ Stop-ScheduledTask "InfoDisplay Sender"; Start-ScheduledTask "InfoDisplay Sender
 | `[news] feeds` | z. B. Intranet-Feed (falls vorhanden) | Eigene Schlagzeilen |
 
 **Energiesparen:** Geht der Firmen-PC in den Standby, trennt sich die Verbindung; nach dem Aufwachen verbindet sich
-der Sender selbst neu. Solange keine Verbindung besteht, zeigt das Display nur die Uhr als Bildschirmschoner.
+der Sender selbst neu. Solange keine Verbindung besteht, zeigt das Display nur Uhr und Datum als Bildschirmschoner.
 
 ---
 

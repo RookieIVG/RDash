@@ -272,7 +272,7 @@ baut der Sender selbst auf.
 
 1. Pi neu starten: `sudo reboot` – nach dem Hochfahren öffnet sich die Anzeige im Vollbild.
 2. Auf dem PC Musik abspielen. Innerhalb von 1–2 Sekunden erscheinen Titel und Cover.
-   Ohne Verbindung zeigt die Anzeige nur die Uhr, die als Bildschirmschoner langsam über den Bildschirm wandert.
+   Ohne Verbindung zeigt die Anzeige nur Uhr und Datum, die als Bildschirmschoner langsam über den Bildschirm wandern.
 3. Termine erscheinen spätestens nach 5 Minuten (bzw. sofort nach dem Verbinden).
 
 **Anzeige ohne Windows testen** (z. B. vor der Kopplung): in `/etc/infodisplay/config.ini`
@@ -296,7 +296,7 @@ lokal eingebunden, keine Internetverbindung nötig. Schrift: Systemschrift des P
 |---|---|
 | Querformat (1920×1080) | Musik links, Uhr/Datum/Wetter und Termine bzw. Schlagzeilen rechts (`[ui] focus`), Leiste unten |
 | Hochformat (1080×1920) | drei gleich hohe Bereiche: **oben** Uhr, Datum, Wetter · **Mitte** Schlagzeilen (gibt es keine: Termine), darunter der nächste Termin als Leiste · **unten** Musik |
-| Keine Verbindung zum PC | **Bildschirmschoner:** nur die Uhr, sie wandert langsam schräg über den Bildschirm und prallt an den Rändern ab (Tempo: `[ui] saver_speed`) – in beiden Formaten |
+| Keine Verbindung zum PC | **Bildschirmschoner:** nur Uhr und Datum, sie wandern langsam schräg über den Bildschirm und prallt an den Rändern ab (Tempo: `[ui] saver_speed`) – in beiden Formaten |
 | Keine Termine / kein Kalender | Der Terminbereich wird ganz ausgeblendet (keine Meldung) |
 
 ### Wetter und Schlagzeilen
@@ -330,7 +330,7 @@ Prüfen, ob der PC die Daten bekommt: `sender.py --test` (Abschnitt 5, Schritt 6
 | Schlagzeilen | je nach `[ui] focus` am Pi: als Leiste unten (eine nach der anderen) oder groß als Liste mit Kurztext – siehe unten |
 
 Wetter und Schlagzeilen werden alle 15 Minuten aktualisiert und nur angezeigt, solange der PC verbunden ist
-(und die Daten nicht älter als 3 Stunden sind). Ohne Verbindung zeigt der Bildschirmschoner nur die Uhr.
+(und die Daten nicht älter als 3 Stunden sind). Ohne Verbindung zeigt der Bildschirmschoner nur Uhr und Datum.
 
 #### Kalender oder Schlagzeilen groß? (`[ui] focus` am Pi, nur Querformat)
 
