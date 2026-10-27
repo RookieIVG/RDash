@@ -1,12 +1,14 @@
-/* InfoDisplay – schlichtes Design: schwarzer Hintergrund, weiße Schrift, keine Kopf-/Fußzeile */
+/* InfoDisplay – schlichtes Design: schwarzer Hintergrund, weiße Schrift, keine Kopf-/Fußzeile.
+   Optional ([ui] cover_background) ein dunkler Farbverlauf passend zum Cover – deshalb sind die
+   Grautöne halbtransparentes Weiß: auf Schwarz sehen sie aus wie bisher, auf Farbe passen sie sich an. */
 
 :root {
   --bg: #000000;
   --text: #ffffff;
-  --text-muted: #9a9a9a;
-  --text-faint: #5c5c5c;
-  --line: #262626;
-  --track: #2a2a2a;
+  --text-muted: rgba(255, 255, 255, 0.62);
+  --text-faint: rgba(255, 255, 255, 0.36);
+  --line: rgba(255, 255, 255, 0.15);
+  --track: rgba(255, 255, 255, 0.17);
 
   --font: system-ui, "DejaVu Sans", "Segoe UI", Arial, sans-serif;
   --gap: clamp(16px, 2.2vw, 48px);
@@ -15,7 +17,11 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html, body { background: var(--bg); }
+html { background: var(--bg); }
+
+/* Hintergrundebenen hinter allem; die obere blendet ein (app.js setBackground) */
+.bg { position: fixed; inset: 0; z-index: -1; background: var(--bg); }
+.bg-layer { position: absolute; inset: 0; opacity: 0; transition: opacity 1.5s ease; }
 
 body {
   margin: 0;
@@ -71,7 +77,7 @@ p { margin: 0; }
   width: clamp(160px, 22vw, 460px);
   aspect-ratio: 1;
   border-radius: 6px;
-  background: #111111;
+  background: rgba(255, 255, 255, 0.07);
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -247,7 +253,7 @@ body.has-news .layout { grid-template-rows: minmax(0, 1fr) auto; }
 .event-subject { font-weight: bold; overflow-wrap: anywhere; }
 .event-meta { color: var(--text-muted); font-size: 0.9em; display: flex; align-items: center; gap: 0.35em; margin-top: 2px; overflow-wrap: anywhere; }
 .event:not(.is-now) .event-time,
-.event:not(.is-now) .event-subject { color: #d8d8d8; }
+.event:not(.is-now) .event-subject { color: rgba(255, 255, 255, 0.86); }
 .event-now {
   margin-left: 0.6em;
   font-size: 0.75em;
@@ -323,5 +329,5 @@ body.is-portrait .media-artist { font-size: clamp(1.15rem, 2.8vw, 2.1rem); }
 body.is-portrait .media-album { font-size: clamp(0.95rem, 2.1vw, 1.5rem); }
 
 @media (prefers-reduced-motion: reduce) {
-  .progress-fill, .news-line { transition: none; }
+  .progress-fill, .news-line, .bg-layer { transition: none; }
 }

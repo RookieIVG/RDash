@@ -14,7 +14,9 @@ Vollständige Anleitung: `README.md`.
 ## Verbindliche Vorgaben
 - UI-Sprache Deutsch; Code-Kommentare Deutsch; README Deutsch
 - Design der Anzeige (Entscheidung des Auftraggebers, ab 1.2.0): **schlicht, kein Firmendesign** – nur schwarzer
-  Hintergrund mit weißer/grauer Schrift, kein Logo, keine Kopf-/Fußzeile, kein Hell/Dunkel-Umschalter
+  Hintergrund mit weißer/grauer Schrift, kein Logo, keine Kopf-/Fußzeile, kein Hell/Dunkel-Umschalter.
+  Ab 1.8.0: bei Musik mit Cover ein dunkler Farbverlauf aus den Cover-Farben (`[ui] cover_background`), sonst schwarz;
+  Grautöne daher als halbtransparentes Weiß (`--text-muted`, `--line` …), damit sie auf Farbe passen
 - Layouts: Querformat 1920×1080, Hochformat 1080×1920 in Dritteln (oben Uhr/Datum/Wetter, Mitte Schlagzeilen
   bzw. Termine, unten Musik) und Mobilgeräte; ohne Verbindung in allen Formaten nur Uhr und Datum als Bildschirmschoner
   (wandert und prallt an den Rändern ab)
