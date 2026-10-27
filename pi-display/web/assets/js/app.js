@@ -62,7 +62,7 @@
     document.body.classList.toggle("is-portrait", portrait);
   }
 
-  // Ruhemodus: ohne Verbindung zum PC nur die Uhr als Bildschirmschoner (siehe style.css)
+  // Ruhemodus: ohne Verbindung zum PC nur Uhr und Datum als Bildschirmschoner (siehe style.css)
   function renderIdle() {
     var connected = serverReachable && state && state.link && state.link.connected;
     document.body.classList.toggle("is-idle", !connected);
@@ -70,13 +70,13 @@
   }
 
   // ---------------------------------------------------------------- Bildschirmschoner
-  // Die Uhr wandert langsam schräg über den Bildschirm und prallt an den Rändern ab
+  // Uhr und Datum wandern langsam schräg über den Bildschirm und prallt an den Rändern ab
   // (wie das bekannte DVD-Logo). Schont den Monitor vor eingebrannten Bildern.
   var saver = { x: 0, y: 0, vx: 1, vy: 1, last: 0, running: false };
 
   function startSaver() {
     if (saver.running) { return; }
-    var node = $("saver-time");
+    var node = $("saver-box");
     saver.running = true;
     saver.last = 0;
     saver.x = Math.random() * Math.max(0, window.innerWidth - node.offsetWidth);
@@ -91,7 +91,7 @@
     var speed = (state && state.ui && state.ui.saver_speed) || 40;    // Pixel pro Sekunde
     var dt = saver.last ? Math.min(0.1, (ts - saver.last) / 1000) : 0;
     saver.last = ts;
-    var node = $("saver-time");
+    var node = $("saver-box");
     var maxX = Math.max(0, window.innerWidth - node.offsetWidth);
     var maxY = Math.max(0, window.innerHeight - node.offsetHeight);
     saver.x += saver.vx * speed * dt;
@@ -184,6 +184,7 @@
     renderTime($("clock-time"), now, showSec);
     renderTime($("saver-time"), now, showSec);
     setText("clock-date", dateFormat.format(now));
+    setText("saver-date", dateFormat.format(now));
   }
 
   // ---------------------------------------------------------------- Termine

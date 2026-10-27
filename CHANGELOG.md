@@ -4,6 +4,11 @@ Alle wesentlichen Änderungen am InfoDisplay. Format nach [Keep a Changelog](htt
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 Neue Einträge werden mit `python tools/bump_version.py` automatisch erzeugt.
 
+## [1.7.0] – 2026-10-27
+
+### Geändert
+- Bildschirmschoner zeigt jetzt Uhr und Datum (wandern gemeinsam über den Bildschirm)
+
 ## [1.6.0] – 2026-10-27
 
 ### Geändert
