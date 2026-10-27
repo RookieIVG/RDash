@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen am InfoDisplay. Format nach [Keep a Changelog](htt
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 Neue Einträge werden mit `python tools/bump_version.py` automatisch erzeugt.
 
+## [1.6.0] – 2026-10-27
+
+### Geändert
+- Ohne Verbindung zum PC: nur die Uhr als Bildschirmschoner, wandert über den Bildschirm und prallt an den Rändern ab – in allen Formaten ([ui] saver_speed)
+- Hochformat in Dritteln: oben Uhr, Datum und Wetter, Mitte Schlagzeilen (sonst Termine) mit nächstem Termin als Leiste, unten Musik
+- Wetter mit animierten Icons (Meteocons von Bas Milius, MIT-Lizenz, lokal eingebunden)
+
 ## [1.5.1] – 2026-10-25
 
 ### Behoben

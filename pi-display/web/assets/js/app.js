@@ -62,10 +62,44 @@
     document.body.classList.toggle("is-portrait", portrait);
   }
 
-  // Ruhemodus: ohne Verbindung zum PC nur Uhr und Datum zentriert (Hochformat, siehe style.css)
+  // Ruhemodus: ohne Verbindung zum PC nur die Uhr als Bildschirmschoner (siehe style.css)
   function renderIdle() {
     var connected = serverReachable && state && state.link && state.link.connected;
     document.body.classList.toggle("is-idle", !connected);
+    if (!connected) { startSaver(); }
+  }
+
+  // ---------------------------------------------------------------- Bildschirmschoner
+  // Die Uhr wandert langsam schräg über den Bildschirm und prallt an den Rändern ab
+  // (wie das bekannte DVD-Logo). Schont den Monitor vor eingebrannten Bildern.
+  var saver = { x: 0, y: 0, vx: 1, vy: 1, last: 0, running: false };
+
+  function startSaver() {
+    if (saver.running) { return; }
+    var node = $("saver-time");
+    saver.running = true;
+    saver.last = 0;
+    saver.x = Math.random() * Math.max(0, window.innerWidth - node.offsetWidth);
+    saver.y = Math.random() * Math.max(0, window.innerHeight - node.offsetHeight);
+    saver.vx = Math.random() < 0.5 ? -1 : 1;
+    saver.vy = Math.random() < 0.5 ? -1 : 1;
+    window.requestAnimationFrame(saverFrame);
+  }
+
+  function saverFrame(ts) {
+    if (!document.body.classList.contains("is-idle")) { saver.running = false; return; }
+    var speed = (state && state.ui && state.ui.saver_speed) || 40;    // Pixel pro Sekunde
+    var dt = saver.last ? Math.min(0.1, (ts - saver.last) / 1000) : 0;
+    saver.last = ts;
+    var node = $("saver-time");
+    var maxX = Math.max(0, window.innerWidth - node.offsetWidth);
+    var maxY = Math.max(0, window.innerHeight - node.offsetHeight);
+    saver.x += saver.vx * speed * dt;
+    saver.y += saver.vy * speed * dt;
+    if (saver.x <= 0) { saver.x = 0; saver.vx = 1; } else if (saver.x >= maxX) { saver.x = maxX; saver.vx = -1; }
+    if (saver.y <= 0) { saver.y = 0; saver.vy = 1; } else if (saver.y >= maxY) { saver.y = maxY; saver.vy = -1; }
+    node.style.transform = "translate3d(" + saver.x.toFixed(1) + "px," + saver.y.toFixed(1) + "px,0)";
+    window.requestAnimationFrame(saverFrame);
   }
 
   // ---------------------------------------------------------------- Musik
@@ -135,16 +169,20 @@
   // ---------------------------------------------------------------- Uhr
   var dateFormat = new Intl.DateTimeFormat(LOCALE, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
+  function renderTime(node, now, showSec) {
+    var main = timeText(now);
+    var value = main + (showSec ? now.getSeconds() : "");
+    if (node.dataset.value === value) { return; }
+    node.dataset.value = value;
+    node.textContent = main;
+    if (showSec) { node.appendChild(el("span", "sec", pad(now.getSeconds()))); }
+  }
+
   function tickClock() {
     var now = new Date();
-    var node = $("clock-time");
     var showSec = !state || !state.ui || state.ui.show_seconds !== false;
-    var main = timeText(now);
-    if (node.dataset.value !== main + (showSec ? now.getSeconds() : "")) {
-      node.dataset.value = main + (showSec ? now.getSeconds() : "");
-      node.textContent = main;
-      if (showSec) { node.appendChild(el("span", "sec", pad(now.getSeconds()))); }
-    }
+    renderTime($("clock-time"), now, showSec);
+    renderTime($("saver-time"), now, showSec);
     setText("clock-date", dateFormat.format(now));
   }
 
@@ -243,7 +281,9 @@
     if (!state) { return; }
     var hasNews = newsItems().length > 0;
     var hasEvents = eventCount > 0;
-    var focus = (state.ui && state.ui.focus) === "news" ? "news" : "calendar";
+    // Hochformat: Mitte immer Schlagzeilen (Termine nur, wenn es keine gibt)
+    var portrait = document.body.classList.contains("is-portrait");
+    var focus = portrait || (state.ui && state.ui.focus) === "news" ? "news" : "calendar";
     if (focus === "news" && !hasNews) { focus = "calendar"; }
     if (focus === "calendar" && !hasEvents && hasNews) { focus = "news"; }
 
@@ -263,19 +303,22 @@
   }
 
   // ---------------------------------------------------------------- Wetter (vom PC, Open-Meteo)
-  // WMO-Wettercodes -> [Icon Tag, Icon Nacht, Text]
+  // WMO-Wettercodes -> [Codes, Icon Tag, Icon Nacht, Text]; Icons: Meteocons (animiert, lokal)
   var WEATHER = [
-    [[0], "sun", "moon-stars", "Klar"],
-    [[1], "sun", "moon", "Überwiegend klar"],
-    [[2], "cloud-sun", "cloud-moon", "Teilweise bewölkt"],
-    [[3], "clouds", "clouds", "Bedeckt"],
-    [[45, 48], "cloud-fog", "cloud-fog", "Nebel"],
-    [[51, 53, 55, 56, 57], "cloud-drizzle", "cloud-drizzle", "Nieselregen"],
-    [[61, 80], "cloud-rain", "cloud-rain", "Leichter Regen"],
-    [[63, 66, 81], "cloud-rain", "cloud-rain", "Regen"],
-    [[65, 67, 82], "cloud-rain-heavy", "cloud-rain-heavy", "Starker Regen"],
-    [[71, 73, 75, 77, 85, 86], "cloud-snow", "cloud-snow", "Schnee"],
-    [[95, 96, 99], "cloud-lightning-rain", "cloud-lightning-rain", "Gewitter"]
+    [[0], "clear-day", "clear-night", "Klar"],
+    [[1], "partly-cloudy-day", "partly-cloudy-night", "Überwiegend klar"],
+    [[2], "partly-cloudy-day", "partly-cloudy-night", "Teilweise bewölkt"],
+    [[3], "overcast", "overcast", "Bedeckt"],
+    [[45, 48], "fog-day", "fog-night", "Nebel"],
+    [[51, 53, 55], "drizzle", "drizzle", "Nieselregen"],
+    [[56, 57, 66, 67], "sleet", "sleet", "Gefrierender Regen"],
+    [[61, 80], "rain", "rain", "Leichter Regen"],
+    [[63, 81], "rain", "rain", "Regen"],
+    [[65, 82], "extreme-rain", "extreme-rain", "Starker Regen"],
+    [[71, 73, 77, 85], "snow", "snow", "Schnee"],
+    [[75, 86], "extreme-snow", "extreme-snow", "Starker Schneefall"],
+    [[95], "thunderstorms-rain", "thunderstorms-rain", "Gewitter"],
+    [[96, 99], "thunderstorms-extreme-rain", "thunderstorms-extreme-rain", "Gewitter mit Hagel"]
   ];
   var MAX_AGE_MS = 3 * 3600 * 1000;   // ältere Daten (PC lange offline) nicht mehr zeigen
 
@@ -289,8 +332,11 @@
     var w = state.weather;
     $("weather").hidden = !fresh(w);
     if (!fresh(w)) { return; }
-    var entry = WEATHER.filter(function (e) { return e[0].indexOf(w.code) !== -1; })[0] || [[], "cloud", "cloud", ""];
-    $("weather-icon").className = "bi bi-" + (w.is_day ? entry[1] : entry[2]);
+    var entry = WEATHER.filter(function (e) { return e[0].indexOf(w.code) !== -1; })[0] ||
+      [[], "not-available", "not-available", ""];
+    var src = "assets/vendor/meteocons/" + (w.is_day ? entry[1] : entry[2]) + ".svg";
+    var img = $("weather-icon");
+    if (img.getAttribute("src") !== src) { img.setAttribute("src", src); }   // sonst startet die Animation neu
     setText("weather-temp", deg(w.temp));
     var parts = [entry[3]];
     if (w.t_max !== null && w.t_min !== null) { parts.push(deg(w.t_min) + " / " + deg(w.t_max)); }

@@ -272,7 +272,7 @@ baut der Sender selbst auf.
 
 1. Pi neu starten: `sudo reboot` – nach dem Hochfahren öffnet sich die Anzeige im Vollbild.
 2. Auf dem PC Musik abspielen. Innerhalb von 1–2 Sekunden erscheinen Titel und Cover.
-   Ohne Verbindung zeigt die Anzeige „Keine Verbindung zum PC“ (Hochformat: nur Uhr und Datum).
+   Ohne Verbindung zeigt die Anzeige nur die Uhr, die als Bildschirmschoner langsam über den Bildschirm wandert.
 3. Termine erscheinen spätestens nach 5 Minuten (bzw. sofort nach dem Verbinden).
 
 **Anzeige ohne Windows testen** (z. B. vor der Kopplung): in `/etc/infodisplay/config.ini`
@@ -288,14 +288,15 @@ Mit `--no-calendar` sendet der Testsender keine Termine (wie ein PC ohne Outlook
 ## 7. Anzeige: Design und Hochformat
 
 **Design:** bewusst schlicht – schwarzer Hintergrund, weiße Schrift, keine Kopf- oder Fußzeile, kein Logo.
-Angezeigt werden nur Uhrzeit/Datum, Termine und die aktuelle Musik. Icons: Bootstrap Icons (lokal eingebunden,
-keine Internetverbindung nötig). Schrift: Systemschrift des Pi (DejaVu Sans).
+Angezeigt werden Uhrzeit/Datum, Wetter, Termine, Schlagzeilen und die aktuelle Musik. Icons: Bootstrap Icons,
+Wetter: animierte [Meteocons](https://github.com/basmilius/weather-icons) von Bas Milius (MIT-Lizenz) – beides
+lokal eingebunden, keine Internetverbindung nötig. Schrift: Systemschrift des Pi (DejaVu Sans).
 
 | Format | Anordnung |
 |---|---|
-| Querformat (1920×1080) | Musik links, Uhr/Datum und Termine rechts |
-| Hochformat (1080×1920) | Uhr/Datum oben, Termine in der Mitte, Musik unten |
-| Hochformat ohne Verbindung zum PC | Nur Uhr und Datum, groß und zentriert |
+| Querformat (1920×1080) | Musik links, Uhr/Datum/Wetter und Termine bzw. Schlagzeilen rechts (`[ui] focus`), Leiste unten |
+| Hochformat (1080×1920) | drei gleich hohe Bereiche: **oben** Uhr, Datum, Wetter · **Mitte** Schlagzeilen (gibt es keine: Termine), darunter der nächste Termin als Leiste · **unten** Musik |
+| Keine Verbindung zum PC | **Bildschirmschoner:** nur die Uhr, sie wandert langsam schräg über den Bildschirm und prallt an den Rändern ab (Tempo: `[ui] saver_speed`) – in beiden Formaten |
 | Keine Termine / kein Kalender | Der Terminbereich wird ganz ausgeblendet (keine Meldung) |
 
 ### Wetter und Schlagzeilen
@@ -329,9 +330,11 @@ Prüfen, ob der PC die Daten bekommt: `sender.py --test` (Abschnitt 5, Schritt 6
 | Schlagzeilen | je nach `[ui] focus` am Pi: als Leiste unten (eine nach der anderen) oder groß als Liste mit Kurztext – siehe unten |
 
 Wetter und Schlagzeilen werden alle 15 Minuten aktualisiert und nur angezeigt, solange der PC verbunden ist
-(und die Daten nicht älter als 3 Stunden sind). Im Ruhemodus (Hochformat ohne Verbindung) bleibt es bei Uhr und Datum.
+(und die Daten nicht älter als 3 Stunden sind). Ohne Verbindung zeigt der Bildschirmschoner nur die Uhr.
 
-#### Kalender oder Schlagzeilen groß? (`[ui] focus` am Pi)
+#### Kalender oder Schlagzeilen groß? (`[ui] focus` am Pi, nur Querformat)
+
+Im Hochformat ist die Aufteilung fest (Mitte = Schlagzeilen, sonst Termine); `focus` gilt nur im Querformat.
 
 | `focus` | Großer Bereich | Leiste unten |
 |---|---|---|
@@ -386,7 +389,8 @@ dann `rotation = 0` lassen.
 | security | `http_rate_per_sec` | 20 | Rate-Limit Webserver |
 | web | `host` / `port` | 127.0.0.1 / 8080 | Webserver nur lokal |
 | ui | `show_seconds` | true | Sekunden in der Uhr |
-| ui | `focus` | calendar | Was groß angezeigt wird: `calendar` oder `news` (Abschnitt 7) |
+| ui | `focus` | calendar | Querformat: was groß angezeigt wird, `calendar` oder `news` (Abschnitt 7) |
+| ui | `saver_speed` | 40 | Bildschirmschoner ohne Verbindung: Tempo der Uhr in Pixel pro Sekunde |
 | ui | `news_seconds` | 12 | Leiste unten: Sekunden bis zur nächsten Schlagzeile |
 | ui | `news_page_seconds` | 30 | Schlagzeilen groß: Sekunden bis zum Weiterblättern |
 | ui | `layout` | auto | `auto` (nach Bildschirmform), `landscape` oder `portrait` – siehe Abschnitt 7 |
@@ -626,5 +630,5 @@ infodisplay/
     ├── includes/               config, logger, protocol, state, link_server, web_server, ratelimit
     ├── install/                install.sh, infodisplay.service, kiosk.sh
     └── web/                    Web-Root: index.html, 404.html, 500.html
-        └── assets/             css/, js/, img/, vendor/bootstrap-icons/
+        └── assets/             css/, js/, img/, vendor/bootstrap-icons/, vendor/meteocons/ (Wetter-Icons)
 ```

@@ -39,11 +39,11 @@
       <section class="block block-clock" aria-label="Uhrzeit">
         <p id="clock-time" class="clock-time">--:--</p>
         <p id="clock-date" class="clock-date">&nbsp;</p>
-        <p id="weather" class="weather" hidden>
-          <i id="weather-icon" class="bi bi-cloud" aria-hidden="true"></i>
+        <div id="weather" class="weather" hidden>
+          <img id="weather-icon" class="weather-icon" alt="">
           <span id="weather-temp" class="weather-temp"></span>
           <span id="weather-text" class="weather-text"></span>
-        </p>
+        </div>
       </section>
 
       <section id="calendar" class="block block-calendar" aria-label="Termine" hidden>
@@ -67,5 +67,10 @@
       </p>
     </section>
   </main>
+
+  <!-- Bildschirmschoner: ohne Verbindung zum PC nur die Uhr, langsam über den Bildschirm wandernd -->
+  <div id="saver" class="saver" aria-label="Uhrzeit">
+    <p id="saver-time" class="saver-time">--:--</p>
+  </div>
 </body>
 </html>
