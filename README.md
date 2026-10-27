@@ -281,6 +281,7 @@ baut der Sender selbst auf.
 python3 ~/infodisplay/tools/fake_sender.py --tcp 127.0.0.1:5099 --token <TOKEN> --seconds 120
 ```
 Mit `--no-calendar` sendet der Testsender keine Termine (wie ein PC ohne Outlook), mit `--no-web` kein Wetter und keine Schlagzeilen.
+Mit `--cover rot|lila|grau|keins` wählt er ein anderes Testcover (Standard: `gruen`).
 (Bei Variante B den Ordner `tools` mitkopieren.) Danach `tcp_test_port = 0` zurücksetzen!
 
 ---
@@ -288,6 +289,8 @@ Mit `--no-calendar` sendet der Testsender keine Termine (wie ein PC ohne Outlook
 ## 7. Anzeige: Design und Hochformat
 
 **Design:** bewusst schlicht – schwarzer Hintergrund, weiße Schrift, keine Kopf- oder Fußzeile, kein Logo.
+Läuft Musik mit Cover, wird der Hintergrund zu einem dunklen Farbverlauf in den Farben des Covers (weich übergeblendet,
+ausschaltbar mit `[ui] cover_background = false`). Ohne Cover, ohne Wiedergabe und ohne Verbindung bleibt er schwarz.
 Angezeigt werden Uhrzeit/Datum, Wetter, Termine, Schlagzeilen und die aktuelle Musik. Icons: Bootstrap Icons,
 Wetter: animierte [Meteocons](https://github.com/basmilius/weather-icons) von Bas Milius (MIT-Lizenz) – beides
 lokal eingebunden, keine Internetverbindung nötig. Schrift: Systemschrift des Pi (DejaVu Sans).
@@ -298,6 +301,7 @@ lokal eingebunden, keine Internetverbindung nötig. Schrift: Systemschrift des P
 | Hochformat (1080×1920) | drei gleich hohe Bereiche: **oben** Uhr, Datum, Wetter · **Mitte** Schlagzeilen (gibt es keine: Termine), darunter der nächste Termin als Leiste · **unten** Musik |
 | Keine Verbindung zum PC | **Bildschirmschoner:** nur Uhr und Datum, sie wandern langsam schräg über den Bildschirm und prallt an den Rändern ab (Tempo: `[ui] saver_speed`) – in beiden Formaten |
 | Keine Termine / kein Kalender | Der Terminbereich wird ganz ausgeblendet (keine Meldung) |
+| Hintergrund | Musik mit Cover: dunkler Farbverlauf passend zum Cover · sonst schwarz |
 
 ### Wetter und Schlagzeilen
 
@@ -391,6 +395,7 @@ dann `rotation = 0` lassen.
 | ui | `show_seconds` | true | Sekunden in der Uhr |
 | ui | `focus` | calendar | Querformat: was groß angezeigt wird, `calendar` oder `news` (Abschnitt 7) |
 | ui | `saver_speed` | 40 | Bildschirmschoner ohne Verbindung: Tempo der Uhr in Pixel pro Sekunde |
+| ui | `cover_background` | true | Hintergrund als Farbverlauf passend zum Cover (`false` = immer schwarz) |
 | ui | `news_seconds` | 12 | Leiste unten: Sekunden bis zur nächsten Schlagzeile |
 | ui | `news_page_seconds` | 30 | Schlagzeilen groß: Sekunden bis zum Weiterblättern |
 | ui | `layout` | auto | `auto` (nach Bildschirmform), `landscape` oder `portrait` – siehe Abschnitt 7 |

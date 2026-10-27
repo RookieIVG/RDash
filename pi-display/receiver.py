@@ -52,7 +52,8 @@ def main():
         app_info={"name": "InfoDisplay", "version": version},
         ui={"show_seconds": cfg.ui_show_seconds, "layout": cfg.ui_layout, "rotation": cfg.ui_rotation,
             "news_seconds": cfg.ui_news_seconds, "news_page_seconds": cfg.ui_news_page_seconds,
-            "focus": cfg.ui_focus, "saver_speed": cfg.ui_saver_speed},
+            "focus": cfg.ui_focus, "saver_speed": cfg.ui_saver_speed,
+            "cover_background": cfg.ui_cover_background},
     )
 
     try:

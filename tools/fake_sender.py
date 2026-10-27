@@ -10,6 +10,7 @@ Beispiele:
 
 import argparse
 import base64
+import hashlib
 import json
 import socket
 import time
@@ -20,13 +21,23 @@ import struct
 import zlib
 
 
-def make_png(size=64):
+# Testcover: Verlauf von Farbe 1 nach Farbe 2
+COVERS = {
+    "gruen": ((0, 126, 54), (22, 159, 219)),
+    "rot": ((200, 30, 40), (250, 160, 40)),
+    "lila": ((90, 40, 160), (220, 60, 140)),
+    "grau": ((60, 60, 60), (200, 200, 200)),
+}
+
+
+def make_png(size=64, colors=COVERS["gruen"]):
+    (r1, g1, b1), (r2, g2, b2) = colors
     rows = []
     for y in range(size):
         row = bytearray([0])
         for x in range(size):
             t = (x + y) / (2 * size - 2)
-            row += bytes((int(0 + 22 * t), int(126 + 33 * t), int(54 + 165 * t)))
+            row += bytes((int(r1 + (r2 - r1) * t), int(g1 + (g2 - g1) * t), int(b1 + (b2 - b1) * t)))
         rows.append(bytes(row))
     raw = zlib.compress(b"".join(rows))
 
@@ -51,6 +62,7 @@ def main():
     parser.add_argument("--seconds", type=int, default=30, help="Wie lange Daten gesendet werden")
     parser.add_argument("--no-calendar", action="store_true", help="Keine Kalenderdaten senden (wie ohne Outlook)")
     parser.add_argument("--no-web", action="store_true", help="Kein Wetter und keine Schlagzeilen senden")
+    parser.add_argument("--cover", choices=list(COVERS) + ["keins"], default="gruen", help="Farbe des Testcovers")
     args = parser.parse_args()
 
     if args.tcp:
@@ -67,9 +79,12 @@ def main():
     if '"welcome"' not in reply:
         return 1
 
-    png = make_png()
-    send(sock, {"type": "cover", "data": {"id": "abcdef0123456789", "mime": "image/png",
-                                           "b64": base64.b64encode(png).decode()}})
+    cover_id = None
+    if args.cover != "keins":
+        png = make_png(colors=COVERS[args.cover])
+        cover_id = hashlib.sha1(png).hexdigest()[:16]
+        send(sock, {"type": "cover", "data": {"id": cover_id, "mime": "image/png",
+                                               "b64": base64.b64encode(png).decode()}})
     now = datetime.now().replace(second=0, microsecond=0)
     fmt = "%Y-%m-%dT%H:%M"
     if not args.no_calendar:
@@ -107,7 +122,7 @@ def main():
         send(sock, {"type": "media", "data": {"active": True, "status": "playing", "title": "Morning Light",
                                                "artist": "The Example Band", "album": "Testaufnahmen",
                                                "source_app": "Spotify", "position_ms": pos,
-                                               "duration_ms": duration, "cover_id": "abcdef0123456789"}})
+                                               "duration_ms": duration, "cover_id": cover_id}})
         send(sock, {"type": "ping"})
         time.sleep(5)
     send(sock, {"type": "bye"})

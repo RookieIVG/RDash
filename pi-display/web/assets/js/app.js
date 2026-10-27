@@ -116,6 +116,7 @@
 
     $("media-body").hidden = !show;
     $("media-empty").hidden = show;
+    if (!show) { setBackground("", null); }
     if (!show) {
       setText("media-empty", !serverReachable ? "Anzeige-Dienst nicht erreichbar"
         : connected ? "Keine Wiedergabe aktiv" : "Keine Verbindung zum PC");
@@ -139,18 +140,107 @@
     var img = $("cover-img");
     if (media.cover_url) {
       if (img.getAttribute("src") !== media.cover_url) {
-        img.onload = function () { img.hidden = false; $("cover-placeholder").hidden = true; };
-        img.onerror = function () { img.hidden = true; $("cover-placeholder").hidden = false; };
+        img.onload = function () { img.hidden = false; $("cover-placeholder").hidden = true; coverBackground(); };
+        img.onerror = function () { img.hidden = true; $("cover-placeholder").hidden = false; setBackground("", null); };
         img.setAttribute("src", media.cover_url);
+      } else {
+        coverBackground();
       }
     } else {
       img.hidden = true;
       img.removeAttribute("src");
       $("cover-placeholder").hidden = false;
+      setBackground("", null);
     }
 
     $("media-progress").hidden = !(media.duration_ms > 0);
     tickProgress();
+  }
+
+  // ---------------------------------------------------------------- Hintergrund passend zum Cover
+  // Aus dem Cover werden ein Grundton und die kräftigste Farbe gewonnen, stark abgedunkelt
+  // (weiße Schrift bleibt gut lesbar) und als Verlauf hinterlegt. Sonst: schwarz.
+  var bgKey = "";              // aktuell gezeigter Hintergrund ("" = schwarz)
+  var bgTop = 0;               // Index der oberen Ebene
+  var coverCache = { src: null, colors: null };
+
+  function setBackground(key, css) {
+    if (key === bgKey) { return; }
+    bgKey = key;
+    var layers = $("bg").children;
+    var next = layers[1 - bgTop];
+    var prev = layers[bgTop];
+    bgTop = 1 - bgTop;
+    // neue Ebene unsichtbar nach oben legen und einblenden; die alte bleibt darunter stehen
+    next.style.transition = "none";
+    next.style.opacity = "0";
+    next.style.background = css || "#000";
+    next.style.zIndex = "2";
+    prev.style.zIndex = "1";
+    void next.offsetWidth;     // Neuberechnung erzwingen, damit die Überblendung startet
+    next.style.transition = "";
+    next.style.opacity = "1";
+  }
+
+  function rgbToHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, h = 0, s = 0;
+    if (max !== min) {
+      var d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      h *= 60;
+    }
+    return [h, s, l];
+  }
+
+  function hsl(c) { return "hsl(" + Math.round(c[0]) + "," + Math.round(c[1] * 100) + "%," + Math.round(c[2] * 100) + "%)"; }
+
+  // Liefert [kräftigste Farbe, Grundton] als HSL oder null
+  function coverColors(img) {
+    var size = 24;
+    var canvas = document.createElement("canvas");
+    canvas.width = canvas.height = size;
+    var ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, size, size);
+    var data = ctx.getImageData(0, 0, size, size).data;
+    var total = [0, 0, 0], buckets = [];
+    for (var i = 0; i < data.length; i += 4) {
+      var r = data[i], g = data[i + 1], b = data[i + 2];
+      total[0] += r; total[1] += g; total[2] += b;
+      var c = rgbToHsl(r, g, b);
+      if (c[1] < 0.2 || c[2] < 0.1 || c[2] > 0.9) { continue; }   // Grau, Schwarz, Weiß zählen nicht
+      var k = Math.floor(c[0] / 30) % 12;                          // 12 Farbbereiche
+      var bucket = buckets[k] || (buckets[k] = { w: 0, r: 0, g: 0, b: 0 });
+      var w = c[1] * (1 - Math.abs(c[2] - 0.5));                   // kräftige, mittlere Farben wiegen mehr
+      bucket.w += w; bucket.r += r * w; bucket.g += g * w; bucket.b += b * w;
+    }
+    var n = data.length / 4;
+    var base = rgbToHsl(total[0] / n, total[1] / n, total[2] / n);
+    var best = buckets.reduce(function (a, x) { return x && (!a || x.w > a.w) ? x : a; }, null);
+    var accent = best ? rgbToHsl(best.r / best.w, best.g / best.w, best.b / best.w) : base;
+    // abdunkeln: Farbe max. 30 % Helligkeit, Grundton max. 12 %
+    return [[accent[0], Math.min(accent[1], 0.75), Math.min(Math.max(accent[2], 0.18), 0.3)],
+            [base[0], Math.min(base[1], 0.6), Math.min(base[2], 0.12)]];
+  }
+
+  function coverBackground() {
+    var img = $("cover-img");
+    var enabled = !state.ui || state.ui.cover_background !== false;
+    if (!enabled || img.hidden || !img.complete || !img.naturalWidth) { setBackground("", null); return; }
+    var src = img.getAttribute("src");
+    if (coverCache.src !== src) {
+      try { coverCache = { src: src, colors: coverColors(img) }; }
+      catch (e) { coverCache = { src: src, colors: null }; }
+    }
+    if (!coverCache.colors) { setBackground("", null); return; }
+    // Farbschwerpunkt dort, wo das Cover steht (links im Querformat, unten im Hochformat)
+    var rect = img.getBoundingClientRect();
+    var x = Math.round((rect.left + rect.width / 2) / window.innerWidth * 100);
+    var y = Math.round((rect.top + rect.height / 2) / window.innerHeight * 100);
+    var accent = hsl(coverCache.colors[0]), base = hsl(coverCache.colors[1]);
+    setBackground(src + "|" + x + "|" + y,
+      "radial-gradient(120% 110% at " + x + "% " + y + "%, " + accent + " 0%, " + base + " 60%, #000 100%)");
   }
 
   function tickProgress() {
@@ -432,7 +522,7 @@
   function markUnreachable() {
     serverReachable = false;
     renderIdle();
-    if (state) { renderMedia(); }
+    if (state) { renderMedia(); } else { setBackground("", null); }
   }
 
   function poll() {

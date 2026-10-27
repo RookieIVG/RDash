@@ -41,6 +41,7 @@ _DEFAULTS = {
         "news_page_seconds": "30",
         "focus": "calendar",
         "saver_speed": "40",
+        "cover_background": "true",
         "layout": "auto",
         "rotation": "0",
     },
@@ -83,6 +84,7 @@ class ReceiverConfig:
     ui_news_page_seconds: int = 30
     ui_focus: str = "calendar"
     ui_saver_speed: int = 40
+    ui_cover_background: bool = True
     ui_layout: str = "auto"
     ui_rotation: int = 0
     tcp_test_port: int = 0
@@ -128,6 +130,7 @@ def load_config(path=None):
         ui_news_page_seconds=max(5, min(600, cp.getint("ui", "news_page_seconds"))),
         ui_focus=focus if focus in ("calendar", "news") else "calendar",
         ui_saver_speed=max(5, min(500, cp.getint("ui", "saver_speed"))),
+        ui_cover_background=cp.getboolean("ui", "cover_background"),
         ui_layout=layout if layout in ("auto", "landscape", "portrait") else "auto",
         ui_rotation=cp.getint("ui", "rotation"),
         tcp_test_port=cp.getint("debug", "tcp_test_port"),

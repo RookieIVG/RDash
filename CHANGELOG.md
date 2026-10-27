@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen am InfoDisplay. Format nach [Keep a Changelog](htt
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 Neue Einträge werden mit `python tools/bump_version.py` automatisch erzeugt.
 
+## [1.8.0] – 2026-10-27
+
+### Hinzugefügt
+- Hintergrund passend zum Cover: dunkler Farbverlauf aus den Farben des Covers, weich übergeblendet; ohne Cover, Wiedergabe oder Verbindung schwarz ([ui] cover_background)
+- Testsender: --cover rot|lila|grau|keins
+
 ## [1.7.0] – 2026-10-27
 
 ### Geändert
