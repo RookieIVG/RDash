@@ -416,6 +416,7 @@ Nach Änderungen: `sudo systemctl restart infodisplay` (ohne SSH-Zugang: Abschni
 | media | `poll_interval` | 1.0 | Abfrage in Sekunden |
 | media | `preferred_apps` | leer | z. B. `spotify` – nur diese App anzeigen |
 | media | `send_cover` / `cover_max_px` | true / 400 | Cover übertragen und verkleinern |
+| media | `cover_max_kb` | 40 | Höchstgröße des Covers in KB – kleiner = schnellerer Liedwechsel über Bluetooth |
 | calendar | `enabled` | true | Outlook-Termine lesen |
 | calendar | `start_outlook` | false | Outlook bei Bedarf selbst starten |
 | calendar | `days_ahead` / `max_events` | 1 / 10 | Zeitraum und Anzahl |
@@ -671,7 +672,27 @@ Browser, keine schreibenden Endpunkte). Die Bluetooth-Verbindung ist durch die K
 | Falsche Uhrzeit (Pi ohne Internet) | Der Pi hat keine Uhr mit Batterie und stellt sich ohne Internet nicht selbst. Ab 1.9.0 übernimmt er die Zeit vom PC, sobald dieser verbunden ist (Log: „Systemzeit vom PC übernommen“). Bis dahin – z. B. direkt nach dem Einschalten – kann sie falsch sein. Von Hand stellen: Abschnitt 11.2. Abhilfe dafür: Pi 5 mit RTC-Batterie bzw. RTC-Modul beim Pi 4 |
 | Uhrzeit genau 1 oder 2 Stunden falsch | Zeitzone des Pi falsch: `timedatectl` prüfen, setzen mit `sudo timedatectl set-timezone Europe/Vienna` |
 | Log: „Systemzeit kann nicht gestellt werden“ | Dienst ohne Berechtigung (alte Dienstdatei) → `sudo ./install.sh` erneut ausführen |
+| Liedwechsel hängt / Verbindung bricht ab | Siehe „Bluetooth-Verbindung verbessern“ unten |
 | Schwarzer Bildschirm / Anzeige weg | `curl 127.0.0.1:8080/healthz`; Autostart: `cat ~/.config/labwc/autostart`; Anzeige von Hand starten: Abschnitt 11.1 |
+
+### Bluetooth-Verbindung verbessern (Liedwechsel hängt, Verbindung bricht ab)
+
+Beim Liedwechsel wird das Cover übertragen – mit Abstand die größte Nachricht. Bluetooth schafft je nach Umgebung
+nur 10–100 KB/s. Ab Version 1.10.0 kommt der Titel deshalb **zuerst** (sofort sichtbar), das Cover folgt; das
+Cover wird auf höchstens `cover_max_kb` (40 KB) verkleinert, und große Nachrichten brechen die Verbindung nicht
+mehr ab, nur weil sie länger brauchen. Ist es trotzdem zäh, liegt es an der Funkstrecke:
+
+| Ursache | Abhilfe |
+|---|---|
+| **WLAN und Bluetooth am Pi teilen sich die Antenne** (2,4 GHz) | Pi per LAN-Kabel anbinden oder WLAN im **5-GHz**-Band nutzen. Wird WLAN am Pi nicht gebraucht: `sudo nmcli radio wifi off` (wieder an: `… wifi on`) |
+| **Energiesparen am PC** schaltet Bluetooth zeitweise ab | Geräte-Manager → *Bluetooth* → Adapter → Eigenschaften → *Energieverwaltung* → Haken bei „Computer kann das Gerät ausschalten, um Energie zu sparen“ entfernen |
+| Abstand / Hindernisse (Metallschrank, Wand) | Pi und PC näher zusammen, Sichtverbindung |
+| USB-3-Geräte (Docking, Festplatte) neben dem Bluetooth-Adapter stören 2,4 GHz | USB-3-Geräte weiter weg bzw. Bluetooth-Stick an einem Verlängerungskabel |
+| Sehr schlechte Strecke | Cover kleiner: `[media] cover_max_kb = 20` · notfalls ohne Cover: `send_cover = false` |
+
+**Messen:** am PC `[logging] level = DEBUG` setzen und Sender neu starten – im Log steht dann z. B.
+`cover gesendet: 38.5 KB in 1.2 s`. Daraus ergibt sich die Übertragungsrate (hier ca. 32 KB/s).
+Am Pi zeigt `sudo journalctl -u infodisplay -f`, wann und warum Verbindungen enden.
 
 **Logs:**
 - Pi: `sudo journalctl -u infodisplay -f` oder `/var/log/infodisplay/infodisplay.log`

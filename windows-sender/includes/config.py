@@ -28,6 +28,7 @@ _DEFAULTS = {
         "preferred_apps": "",
         "send_cover": "true",
         "cover_max_px": "400",
+        "cover_max_kb": "40",
     },
     "calendar": {
         "enabled": "true",
@@ -83,6 +84,7 @@ class SenderConfig:
     preferred_apps: list = field(default_factory=list)
     send_cover: bool = True
     cover_max_px: int = 400
+    cover_max_kb: int = 40
     calendar_enabled: bool = True
     start_outlook: bool = False
     refresh_minutes: float = 5
@@ -139,6 +141,7 @@ def load_config(path=None, require_link=True):
         preferred_apps=_split_list(cp.get("media", "preferred_apps")),
         send_cover=cp.getboolean("media", "send_cover"),
         cover_max_px=max(64, min(1024, cp.getint("media", "cover_max_px"))),
+        cover_max_kb=max(8, min(500, cp.getint("media", "cover_max_kb"))),
         calendar_enabled=cp.getboolean("calendar", "enabled"),
         start_outlook=cp.getboolean("calendar", "start_outlook"),
         refresh_minutes=max(1.0, cp.getfloat("calendar", "refresh_minutes")),

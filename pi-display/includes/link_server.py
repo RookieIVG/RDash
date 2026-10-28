@@ -27,18 +27,24 @@ class LineReader:
     def __init__(self, conn, max_bytes):
         self.conn = conn
         self.max_bytes = max_bytes
-        self.buffer = b""
+        self.buffer = bytearray()
 
     def readline(self):
         """Liefert die nächste Zeile (ohne '\\n') oder None bei Verbindungsende."""
-        while b"\n" not in self.buffer:
-            if len(self.buffer) > self.max_bytes:
+        searched = 0            # nur neu angekommene Bytes nach dem Zeilenende durchsuchen (große Cover-Zeilen)
+        while True:
+            pos = self.buffer.find(b"\n", searched)
+            if pos != -1:
+                break
+            searched = len(self.buffer)
+            if searched > self.max_bytes:
                 raise LineTooLong()
             chunk = self.conn.recv(65536)
             if not chunk:
                 return None
             self.buffer += chunk
-        line, self.buffer = self.buffer.split(b"\n", 1)
+        line = bytes(self.buffer[:pos])
+        del self.buffer[:pos + 1]
         if len(line) > self.max_bytes:
             raise LineTooLong()
         return line

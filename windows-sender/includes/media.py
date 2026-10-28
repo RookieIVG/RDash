@@ -71,16 +71,28 @@ def _ms(td):
         return 0
 
 
-def prepare_cover(raw, max_px):
-    """Verkleinert das Cover auf max_px und liefert (bytes, mime) oder None."""
+def prepare_cover(raw, max_px, max_bytes=40 * 1024):
+    """Verkleinert das Cover auf max_px und liefert (bytes, mime) oder None.
+
+    Ziel ist eine kleine Datei (max_bytes): Bluetooth schafft je nach Umgebung nur 10–100 KB/s,
+    ein großes Cover würde den Liedwechsel spürbar verzögern. Erst wird die JPEG-Qualität
+    gesenkt, reicht das nicht, auch die Größe.
+    """
     if PIL_AVAILABLE:
         try:
             img = Image.open(io.BytesIO(raw))
             img = img.convert("RGB")
             img.thumbnail((max_px, max_px))
-            out = io.BytesIO()
-            img.save(out, format="JPEG", quality=85, optimize=True)
-            return out.getvalue(), "image/jpeg"
+            data = b""
+            for _ in range(4):
+                for quality in (82, 72, 62):
+                    out = io.BytesIO()
+                    img.save(out, format="JPEG", quality=quality, optimize=True)
+                    data = out.getvalue()
+                    if len(data) <= max_bytes:
+                        return data, "image/jpeg"
+                img.thumbnail((int(img.width * 0.8), int(img.height * 0.8)))
+            return data, "image/jpeg"
         except Exception as exc:  # defektes Bild
             log.debug("Cover konnte nicht verkleinert werden: %s", exc)
     if raw[:3] == b"\xff\xd8\xff":
@@ -205,7 +217,7 @@ class MediaWatcher:
             self._cover_attempts += 1
             try:
                 raw = await self._read_thumbnail(props.thumbnail)
-                prepared = prepare_cover(raw, self.cfg.cover_max_px) if raw else None
+                prepared = prepare_cover(raw, self.cfg.cover_max_px, self.cfg.cover_max_kb * 1024) if raw else None
                 if prepared:
                     data, mime = prepared
                     self._cover_id = hashlib.sha1(data).hexdigest()[:16]

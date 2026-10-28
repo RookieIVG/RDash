@@ -124,14 +124,16 @@ async def media_loop(cfg, link):
             watcher.reset()
             await asyncio.sleep(cfg.poll_interval * 5)
             continue
-        if cover:
-            await link.publish(protocol.cover(cover["id"], cover["mime"], cover["b64"]), remember="cover")
         if generation != link.generation:   # neue Verbindung -> alles neu senden
             last, generation = None, link.generation
+        # Erst Titel/Interpret (klein, sofort sichtbar), danach das Cover (groß, braucht über
+        # Bluetooth ggf. einige Sekunden) – sonst wartet der Text beim Liedwechsel auf das Bild.
         if _media_changed(media, last, last_time, cfg.resend_interval):
             if await link.publish(protocol.media(media)):
                 last, last_time = media, time.monotonic()
                 log.debug("Medien gesendet: %s – %s (%s)", media.get("artist"), media.get("title"), media.get("status"))
+        if cover:
+            await link.publish(protocol.cover(cover["id"], cover["mime"], cover["b64"]), remember="cover")
         await asyncio.sleep(cfg.poll_interval)
 
 

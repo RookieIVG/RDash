@@ -4,6 +4,14 @@ Alle wesentlichen Änderungen am InfoDisplay. Format nach [Keep a Changelog](htt
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 Neue Einträge werden mit `python tools/bump_version.py` automatisch erzeugt.
 
+## [1.10.0] – 2026-10-28
+
+### Geändert
+- Liedwechsel schneller: Titel/Interpret werden vor dem Cover gesendet, Cover auf höchstens 40 KB verkleinert ([media] cover_max_kb)
+- Verbindung bricht bei großen Nachrichten nicht mehr ab: Sendelimit richtet sich nach der Größe (Bluetooth mit ab 1 KB/s)
+- Pi: Hintergrund-Überblendung über die Grafikeinheit (ruckelt nicht mehr beim Liedwechsel), effizienteres Einlesen großer Nachrichten
+- README: Abschnitt „Bluetooth-Verbindung verbessern“ (WLAN/Bluetooth-Störungen, Energiesparen, Messen)
+
 ## [1.9.1] – 2026-10-28
 
 ### Geändert
