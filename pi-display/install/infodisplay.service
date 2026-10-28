@@ -13,6 +13,8 @@ WorkingDirectory=/opt/infodisplay
 ExecStartPre=-+/usr/sbin/rfkill unblock bluetooth
 ExecStartPre=-+/usr/bin/timeout 10 /usr/bin/bluetoothctl power on
 ExecStart=/usr/bin/python3 /opt/infodisplay/receiver.py --config /etc/infodisplay/config.ini
+# Darf die Systemzeit stellen (Uhrzeit vom PC übernehmen, [time] sync_from_pc) – sonst keine Sonderrechte
+AmbientCapabilities=CAP_SYS_TIME
 Restart=always
 RestartSec=5
 
