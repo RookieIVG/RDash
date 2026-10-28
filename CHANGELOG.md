@@ -4,6 +4,11 @@ Alle wesentlichen Änderungen am InfoDisplay. Format nach [Keep a Changelog](htt
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 Neue Einträge werden mit `python tools/bump_version.py` automatisch erzeugt.
 
+## [1.10.2] – 2026-10-28
+
+### Behoben
+- Wetter und Schlagzeilen auch hinter Firmen-Firewalls mit TLS-Inspection: die strenge Zusatzprüfung von Python 3.13 („Missing Authority Key Identifier“) ist abschaltbar und standardmäßig aus ([internet] strict_tls); Zertifikatskette und Servername werden weiter geprüft
+
 ## [1.10.1] – 2026-10-28
 
 ### Behoben

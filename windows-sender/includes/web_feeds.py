@@ -7,6 +7,7 @@ und schickt sie per Bluetooth weiter. Nur Standardbibliothek (urllib, ElementTre
 import html
 import json
 import re
+import ssl
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -20,12 +21,24 @@ USER_AGENT = "InfoDisplay (Raspberry-Pi-Anzeige)"
 OPEN_METEO = "https://api.open-meteo.com/v1/forecast"
 
 
+def _ssl_context(cfg):
+    """Zertifikate werden immer geprüft: Kette bis zu einer vertrauenswürdigen Stelle (unter Windows der
+    Zertifikatsspeicher, inkl. Firmen-CA) und passender Servername."""
+    ctx = ssl.create_default_context()
+    if not cfg.strict_tls:
+        # Python 3.13 prüft zusätzlich streng nach RFC 5280 (VERIFY_X509_STRICT). Zertifikate von
+        # Firmen-Firewalls mit TLS-Inspection erfüllen das oft nicht ("Missing Authority Key Identifier").
+        # Ohne diese Zusatzprüfung verhält sich Python wie bis Version 3.12 und wie die Browser.
+        ctx.verify_flags &= ~ssl.VERIFY_X509_STRICT
+    return ctx
+
+
 def _opener(cfg):
     if cfg.proxy:
         handler = urllib.request.ProxyHandler({"http": cfg.proxy, "https": cfg.proxy})
     else:
         handler = urllib.request.ProxyHandler()   # Proxy aus den Windows-Einstellungen
-    return urllib.request.build_opener(handler)
+    return urllib.request.build_opener(handler, urllib.request.HTTPSHandler(context=_ssl_context(cfg)))
 
 
 def _get(cfg, url):

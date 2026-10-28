@@ -431,6 +431,7 @@ Nach Änderungen: `sudo systemctl restart infodisplay` (ohne SSH-Zugang: Abschni
 | news | `max_headlines` / `refresh_minutes` | 10 / 15 | Anzahl (abwechselnd aus allen Feeds), Aktualisierung |
 | news | `with_text` | true | Kurztext der Meldung mitsenden (sichtbar bei `focus = news`) |
 | internet | `proxy` / `timeout` | leer / 15 | Proxy (leer = Windows-Einstellung), Zeitlimit je Abruf |
+| internet | `strict_tls` | false | `true` = zusätzlich strenge Zertifikatsprüfung von Python 3.13 (scheitert an Firmen-Firewalls) |
 | logging | `file` / `level` | `%LOCALAPPDATA%\InfoDisplay\logs\sender.log` / INFO | Zentrales Log |
 
 Nach Änderungen: Aufgabe neu starten
@@ -690,7 +691,7 @@ ssh admin@RDash.local
 | Rate-Limiting | Verbindungsversuche pro Gerät, Nachrichten pro Verbindung, HTTP-Anfragen pro IP, max. SSE-Clients |
 | Eingabeprüfung | Max. Nachrichtengröße, Typ-/Längenprüfung, Steuerzeichen entfernt, Cover nur JPEG/PNG (Magic Bytes) |
 | Ausgabe | Anzeige setzt Texte nur per `textContent` (kein HTML), strikte Content-Security-Policy |
-| Internet | Nur der PC greift aufs Internet zu (Wetter/Feeds, nur `http`/`https`, max. 2 MB, Zeitlimit, XML ohne externe Entitäten/Entity-Bomben). Der Pi bleibt offline und prüft auch diese Daten (Typ, Länge, Wertebereich) |
+| Internet | Nur der PC greift aufs Internet zu (Wetter/Feeds, nur `http`/`https`, max. 2 MB, Zeitlimit, XML ohne externe Entitäten/Entity-Bomben). Zertifikate werden immer geprüft (Kette bis zu einer vertrauenswürdigen Stelle im Windows-Zertifikatsspeicher, Servername). Der Pi bleibt offline und prüft auch diese Daten (Typ, Länge, Wertebereich) |
 | Webserver | Nur `127.0.0.1`, nur lesende GET-Endpunkte, Pfadprüfung gegen Directory Traversal, Security-Header |
 | Konfiguration | Zugangsdaten außerhalb des Web-Roots: `/etc/infodisplay` (640) bzw. `%APPDATA%` (nur Benutzer) |
 | Dienst | Eigener Systembenutzer ohne Login, systemd-Härtung (`ProtectSystem=strict`, `NoNewPrivileges`, …); einzige Sonderberechtigung `CAP_SYS_TIME` (Uhr stellen, nur mit Zeitstempeln angemeldeter Sender, nur Werte ab 2024) |
@@ -716,6 +717,8 @@ Browser, keine schreibenden Endpunkte). Die Bluetooth-Verbindung ist durch die K
 | Kopplung schlägt fehl | Auf dem Pi `bluetoothctl` → `remove <PC-MAC>`, in Windows Gerät entfernen, Schritt 4 wiederholen |
 | Hochformat-Bild verdreht oder nicht gedreht | `rotation` auf `270` statt `90` setzen; Ausgangsname prüfen: `wlr-randr` in einem Terminal am Pi-Desktop |
 | Popup „Übersetzen? Deutsch / Englisch“ oben rechts | Ab 1.2.2 abgeschaltet: Update einspielen (Abschnitt 9) und Pi neu starten. Prüfen: `cat /etc/chromium/policies/managed/infodisplay.json` |
+| `CERTIFICATE_VERIFY_FAILED … Missing Authority Key Identifier` | Firmen-Firewall prüft verschlüsselte Verbindungen (TLS-Inspection); ihre Zertifikate erfüllen die strenge Zusatzprüfung von Python 3.13 nicht. Ab Version 1.10.2 behoben (`[internet] strict_tls = false`, Standard) – Sender aktualisieren |
+| `CERTIFICATE_VERIFY_FAILED … unable to get local issuer certificate` | Die Zertifizierungsstelle der Firma fehlt im Windows-Zertifikatsspeicher des PCs → IT fragen. Zertifikatsprüfung **nicht** abschalten |
 | Kein Wetter / keine Schlagzeilen | Am PC `sender.py --test` ausführen: Fehlermeldungen zeigen, ob Proxy (`[internet] proxy`) oder Feed-Adresse falsch ist. Sender-Log auf „Feed nicht lesbar“ / „Wetter nicht abrufbar“ prüfen. Pi und PC müssen ab Version 1.4.0 laufen |
 | Mauszeiger sichtbar | Ab 1.3.0 wird er beim Start ausgeblendet und in die Ecke geschoben (`wlrctl`, wird von `install.sh` installiert). Sonst Maus einmal bewegen oder abstecken – im Betrieb wird keine Maus gebraucht |
 | Falsche Uhrzeit (Pi ohne Internet) | Der Pi hat keine Uhr mit Batterie und stellt sich ohne Internet nicht selbst. Ab 1.9.0 übernimmt er die Zeit vom PC, sobald dieser verbunden ist (Log: „Systemzeit vom PC übernommen“). Bis dahin – z. B. direkt nach dem Einschalten – kann sie falsch sein. Von Hand stellen: Abschnitt 11.2. Abhilfe dafür: Pi 5 mit RTC-Batterie bzw. RTC-Modul beim Pi 4 |

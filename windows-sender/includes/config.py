@@ -57,6 +57,7 @@ _DEFAULTS = {
     "internet": {
         "proxy": "",
         "timeout": "15",
+        "strict_tls": "false",
     },
     "logging": {
         "file": r"%LOCALAPPDATA%\InfoDisplay\logs\sender.log",
@@ -105,6 +106,7 @@ class SenderConfig:
     news_refresh_minutes: float = 15
     proxy: str = ""
     web_timeout: float = 15
+    strict_tls: bool = False
     log_file: str = ""
     log_level: str = "INFO"
     log_max_bytes: int = 2_000_000
@@ -162,6 +164,7 @@ def load_config(path=None, require_link=True):
         news_refresh_minutes=max(5.0, cp.getfloat("news", "refresh_minutes")),
         proxy=cp.get("internet", "proxy").strip(),
         web_timeout=max(3.0, cp.getfloat("internet", "timeout")),
+        strict_tls=cp.getboolean("internet", "strict_tls"),
         log_file=os.path.expandvars(cp.get("logging", "file")),
         log_level=cp.get("logging", "level"),
         log_max_bytes=cp.getint("logging", "max_bytes"),
