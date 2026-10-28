@@ -4,6 +4,15 @@ Alle wesentlichen Änderungen am InfoDisplay. Format nach [Keep a Changelog](htt
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 Neue Einträge werden mit `python tools/bump_version.py` automatisch erzeugt.
 
+## [1.10.1] – 2026-10-28
+
+### Behoben
+- Pi-Installation funktioniert offline (z. B. Update per USB-Stick): install.sh installiert nur fehlende Pakete und bricht ohne Internet nicht mehr ab
+
+### Hinzugefügt
+- tools/make_packages.sh: getrennte Pakete für Pi und PC (infodisplay-pi-…zip, infodisplay-pc-…zip)
+- README 9.1: Pi per USB-Stick aktualisieren
+
 ## [1.10.0] – 2026-10-28
 
 ### Geändert

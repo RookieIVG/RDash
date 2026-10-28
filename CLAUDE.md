@@ -7,7 +7,7 @@ Vollständige Anleitung: `README.md`.
 ## Sprachen & Aufbau
 - `windows-sender/` – Python 3.12+ (winrt 3.2.1, pywin32, Pillow), Einstieg `sender.py`
 - `pi-display/` – Python 3 nur Standardbibliothek, Einstieg `receiver.py`; Web-Root `pi-display/web/` (HTML/CSS/JS, kein Build)
-- `tools/` – `bump_version.py` (Version + Changelog), `fake_sender.py` (Testdaten)
+- `tools/` – `bump_version.py` (Version + Changelog), `fake_sender.py` (Testdaten), `make_packages.sh` (ZIP-Pakete)
 - Protokoll: eine JSON-Nachricht pro Zeile, `v = 1`. Änderungen immer an **beiden** Seiten
   (`windows-sender/includes/protocol.py` und `pi-display/includes/protocol.py`) und im README-Abschnitt 14.
 
@@ -34,8 +34,9 @@ Vollständige Anleitung: `README.md`.
 
 ## Arbeitsweise (Wunsch des Auftraggebers)
 - Änderungen nach erfolgreichem Test selbst per Pull Request nach `main` mergen (nicht auf den Nutzer warten)
-- Nach jeder Änderung das komplette Paket als ZIP ausgeben: `git archive --format=zip --prefix=infodisplay/
-  -o infodisplay-<VERSION>.zip origin/main` und dem Nutzer als Datei senden
+- Nach jeder Änderung die Pakete ausgeben: `tools/make_packages.sh <Zielordner>` erzeugt aus `origin/main`
+  `infodisplay-<VERSION>.zip` (komplett), `infodisplay-pi-<VERSION>.zip` und `infodisplay-pc-<VERSION>.zip` –
+  alle drei dem Nutzer als Datei senden (der Pi wird teils offline per USB-Stick aktualisiert)
 - Pfade am Pi in Anleitungen: Projektordner `~/infodisplay` (per `git clone` von GitHub)
 
 ## Testen ohne Hardware
