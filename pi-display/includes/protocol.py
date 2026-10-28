@@ -17,6 +17,9 @@ MAX_COVER_BYTES = 2 * 1024 * 1024
 MAX_HEADLINES = 30
 _ISO_LOCAL = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$")
 _HEX_ID = re.compile(r"^[0-9a-f]{8,64}$")
+_B64_PART = re.compile(r"^[A-Za-z0-9+/=]*$")
+MAX_CHUNK_CHARS = 16384
+MAX_COVER_B64 = MAX_COVER_BYTES * 4 // 3 + 4
 _STATUSES = {"playing", "paused", "stopped"}
 
 
@@ -135,6 +138,53 @@ def parse_news(data):
             items.append({"title": title, "source": clean_text(item.get("source"), 40),
                           "text": clean_text(item.get("text"), 400)})
     return items
+
+
+def parse_cover_chunk(data):
+    """Ein Stück des Covers prüfen -> (id, index, total, b64-Teil)."""
+    if not isinstance(data, dict):
+        raise ProtocolError("cover_chunk.data fehlt")
+    cover_id, index, total, part = data.get("id"), data.get("index"), data.get("total"), data.get("b64")
+    if not isinstance(cover_id, str) or not _HEX_ID.match(cover_id):
+        raise ProtocolError("ungültige Cover-ID")
+    if (isinstance(index, bool) or isinstance(total, bool) or not isinstance(index, int)
+            or not isinstance(total, int) or not 1 <= total <= MAX_COVER_B64 // 1024 or not 0 <= index < total):
+        raise ProtocolError("ungültige Stücknummer")
+    if not isinstance(part, str) or len(part) > MAX_CHUNK_CHARS or not _B64_PART.match(part):
+        raise ProtocolError("ungültiges Cover-Stück")
+    return cover_id, index, total, part
+
+
+class CoverAssembler:
+    """Setzt die Stücke eines Covers wieder zusammen (eines zur Zeit, je Verbindung).
+
+    Ein neues Cover beginnt mit Stück 0 und verdrängt ein unvollständiges altes – der Sender bricht
+    überholte Cover absichtlich ab, das ist kein Fehler. Stücke ohne passenden Anfang werden verworfen.
+    """
+
+    def __init__(self):
+        self._reset()
+
+    def _reset(self):
+        self.cover_id, self.total, self.parts, self.size = None, 0, [], 0
+
+    def add(self, cover_id, index, total, part):
+        """Liefert (id, mime, bytes), sobald das Cover vollständig ist, sonst None."""
+        if index == 0:
+            self._reset()
+            self.cover_id, self.total = cover_id, total
+        elif cover_id != self.cover_id or total != self.total or index != len(self.parts):
+            return None
+        self.parts.append(part)
+        self.size += len(part)
+        if self.size > MAX_COVER_B64:
+            self._reset()
+            raise ProtocolError("Cover zu groß")
+        if len(self.parts) < self.total:
+            return None
+        b64 = "".join(self.parts)
+        self._reset()
+        return parse_cover({"id": cover_id, "b64": b64})
 
 
 def parse_calendar(data):

@@ -39,6 +39,12 @@ def cover(cover_id, mime, b64):
     return {"type": "cover", "sent_at_ms": now_ms(), "data": {"id": cover_id, "mime": mime, "b64": b64}}
 
 
+def cover_chunk(cover_id, mime, index, total, part):
+    """Ein Stück des Covers (Base64). Zwischen den Stücken können andere Nachrichten gesendet werden."""
+    return {"type": "cover_chunk", "sent_at_ms": now_ms(),
+            "data": {"id": cover_id, "mime": mime, "index": index, "total": total, "b64": part}}
+
+
 def calendar(events):
     return {"type": "calendar", "sent_at_ms": now_ms(), "data": {"events": events}}
 

@@ -45,6 +45,52 @@ def single_instance():
     return kernel32.GetLastError() != 183  # ERROR_ALREADY_EXISTS
 
 
+COVER_CHUNK_CHARS = 4096     # Base64-Zeichen pro Cover-Stück (über Bluetooth je nach Strecke 0,05–2 s)
+
+
+class CoverSender:
+    """Überträgt das Cover in Stücken (cover_chunk).
+
+    Zwischen den Stücken kommen andere Nachrichten durch – ein neuer Titel muss nicht warten, bis
+    ein großes Cover über eine langsame Bluetooth-Strecke übertragen ist. Kommt währenddessen ein
+    neues Cover, wird das alte abgebrochen.
+    """
+
+    def __init__(self, link):
+        self.link = link
+        self.current = None
+        self._wake = asyncio.Event()
+
+    def offer(self, cover):
+        self.current = cover
+        self._wake.set()
+
+    def resend(self):
+        """Nach einer Neuverbindung das aktuelle Cover noch einmal schicken."""
+        if self.current:
+            self._wake.set()
+
+    async def run(self):
+        while True:
+            await self._wake.wait()
+            self._wake.clear()
+            cover = self.current
+            if not cover:
+                continue
+            b64 = cover["b64"]
+            parts = [b64[i:i + COVER_CHUNK_CHARS] for i in range(0, len(b64), COVER_CHUNK_CHARS)] or [""]
+            start = time.monotonic()
+            for index, part in enumerate(parts):
+                if self.current is not cover:
+                    log.debug("Cover %s überholt – Übertragung abgebrochen", cover["id"])
+                    break
+                if not await self.link.publish(protocol.cover_chunk(cover["id"], cover["mime"], index, len(parts), part)):
+                    break               # nicht verbunden – nach der Neuverbindung kommt resend()
+                await asyncio.sleep(0)  # anderen Nachrichten (Titel, Ping) den Vortritt lassen
+            else:
+                log.debug("Cover gesendet: %.1f KB in %.1f s", len(b64) / 1024, time.monotonic() - start)
+
+
 class LinkManager:
     """Hält die Verbindung aufrecht und verschickt Nachrichten der Reihe nach."""
 
@@ -54,6 +100,7 @@ class LinkManager:
         self.generation = 0          # erhöht sich bei jeder neuen Verbindung
         self._snapshot = {}           # zuletzt gesendete Daten je Typ (für Neuverbindung)
         self._lock = asyncio.Lock()
+        self.covers = CoverSender(self)
 
     async def supervisor(self):
         backoff = 2
@@ -77,7 +124,8 @@ class LinkManager:
             backoff, last_error = 2, None
             self.generation += 1
             self.connected.set()
-            for key in ("cover", "calendar", "weather", "news"):
+            self.covers.resend()
+            for key in ("calendar", "weather", "news"):
                 if key in self._snapshot:
                     await self.publish(self._snapshot[key])
 
@@ -124,14 +172,16 @@ async def media_loop(cfg, link):
             watcher.reset()
             await asyncio.sleep(cfg.poll_interval * 5)
             continue
-        if cover:
-            await link.publish(protocol.cover(cover["id"], cover["mime"], cover["b64"]), remember="cover")
         if generation != link.generation:   # neue Verbindung -> alles neu senden
             last, generation = None, link.generation
+        # Erst Titel/Interpret (klein, sofort sichtbar), danach das Cover – stückweise im Hintergrund
+        # (CoverSender), damit der Text beim Liedwechsel nie auf das Bild warten muss.
         if _media_changed(media, last, last_time, cfg.resend_interval):
             if await link.publish(protocol.media(media)):
                 last, last_time = media, time.monotonic()
                 log.debug("Medien gesendet: %s – %s (%s)", media.get("artist"), media.get("title"), media.get("status"))
+        if cover:
+            link.covers.offer(cover)
         await asyncio.sleep(cfg.poll_interval)
 
 
@@ -191,7 +241,7 @@ async def heartbeat_loop(cfg, link):
 async def run(cfg, version):
     client = LinkClient(cfg, version)
     link = LinkManager(client)
-    tasks = [link.supervisor(), heartbeat_loop(cfg, link)]
+    tasks = [link.supervisor(), link.covers.run(), heartbeat_loop(cfg, link)]
     if cfg.media_enabled:
         tasks.append(media_loop(cfg, link))
     if cfg.calendar_enabled:

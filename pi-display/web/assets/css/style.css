@@ -21,7 +21,9 @@ html { background: var(--bg); }
 
 /* Hintergrundebenen hinter allem; die obere blendet ein (app.js setBackground) */
 .bg { position: fixed; inset: 0; z-index: -1; background: var(--bg); }
-.bg-layer { position: absolute; inset: 0; opacity: 0; transition: opacity 1.5s ease; }
+/* will-change: eigene Grafikebene – das Überblenden läuft dann über die GPU statt den ganzen
+   Bildschirm in jedem Schritt neu zu zeichnen (wichtig auf dem Pi 4) */
+.bg-layer { position: absolute; inset: 0; opacity: 0; transition: opacity 1.5s ease; will-change: opacity; }
 
 body {
   margin: 0;

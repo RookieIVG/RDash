@@ -7,6 +7,7 @@ Heartbeat) liegt in sender.py.
 import json
 import socket
 import threading
+import time
 
 from . import protocol
 from .logger import get_logger
@@ -14,6 +15,8 @@ from .logger import get_logger
 log = get_logger("link")
 
 MAX_REPLY_BYTES = 64 * 1024
+MIN_SEND_TIMEOUT = 15.0     # Sekunden
+SLOW_BYTES_PER_S = 1000     # angenommene Mindestrate über Bluetooth (bei Störungen) für das Sendelimit
 
 
 class LinkError(Exception):
@@ -82,7 +85,14 @@ class LinkClient:
         with self._lock:
             if self._sock is None:
                 raise LinkError("Nicht verbunden")
+            # Zeitlimit nach Größe: ein Cover darf bei schlechter Funkverbindung länger brauchen,
+            # ohne dass die Verbindung abgebrochen wird
+            self._sock.settimeout(max(MIN_SEND_TIMEOUT, len(data) / SLOW_BYTES_PER_S))
+            start = time.monotonic()
             self._sock.sendall(data)
+            elapsed = time.monotonic() - start
+        if len(data) > 8192 or elapsed > 2:
+            log.debug("%s gesendet: %.1f KB in %.1f s", message.get("type"), len(data) / 1024, elapsed)
 
     def close(self, say_bye=False):
         with self._lock:
