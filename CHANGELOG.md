@@ -4,6 +4,11 @@ Alle wesentlichen Änderungen am InfoDisplay. Format nach [Keep a Changelog](htt
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 Neue Einträge werden mit `python tools/bump_version.py` automatisch erzeugt.
 
+## [1.9.0] – 2026-10-28
+
+### Hinzugefügt
+- Pi übernimmt die Uhrzeit vom verbundenen PC (beim Verbinden und bei Abweichung > 2 s) – richtige Uhrzeit auch ohne Internet ([time] sync_from_pc, Dienst mit CAP_SYS_TIME)
+
 ## [1.8.0] – 2026-10-27
 
 ### Hinzugefügt

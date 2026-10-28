@@ -45,6 +45,9 @@ _DEFAULTS = {
         "layout": "auto",
         "rotation": "0",
     },
+    "time": {
+        "sync_from_pc": "true",
+    },
     "debug": {
         "tcp_test_port": "0",
         "tcp_test_host": "127.0.0.1",
@@ -87,6 +90,7 @@ class ReceiverConfig:
     ui_cover_background: bool = True
     ui_layout: str = "auto"
     ui_rotation: int = 0
+    time_sync_from_pc: bool = True
     tcp_test_port: int = 0
     tcp_test_host: str = "127.0.0.1"
     log_file: str = ""
@@ -133,6 +137,7 @@ def load_config(path=None):
         ui_cover_background=cp.getboolean("ui", "cover_background"),
         ui_layout=layout if layout in ("auto", "landscape", "portrait") else "auto",
         ui_rotation=cp.getint("ui", "rotation"),
+        time_sync_from_pc=cp.getboolean("time", "sync_from_pc"),
         tcp_test_port=cp.getint("debug", "tcp_test_port"),
         tcp_test_host=cp.get("debug", "tcp_test_host").strip(),
         log_file=cp.get("logging", "file").strip(),

@@ -400,6 +400,7 @@ dann `rotation = 0` lassen.
 | ui | `news_page_seconds` | 30 | Schlagzeilen groß: Sekunden bis zum Weiterblättern |
 | ui | `layout` | auto | `auto` (nach Bildschirmform), `landscape` oder `portrait` – siehe Abschnitt 7 |
 | ui | `rotation` | 0 | Bildschirm drehen: `0`, `90`, `180`, `270` (Hochformat: `90` oder `270`) |
+| time | `sync_from_pc` | true | Systemzeit des Pi nach der Uhr des PCs stellen (Pi hat ohne Internet keine genaue Zeit) |
 | debug | `tcp_test_port` | 0 | TCP-Testzugang (nur zum Testen) |
 | logging | `file` / `level` | /var/log/infodisplay/… / INFO | Zentrales Log |
 
@@ -543,7 +544,7 @@ Den neuen Token in `%APPDATA%\InfoDisplay\config.ini` am neuen PC eintragen und 
 | Internet | Nur der PC greift aufs Internet zu (Wetter/Feeds, nur `http`/`https`, max. 2 MB, Zeitlimit, XML ohne externe Entitäten/Entity-Bomben). Der Pi bleibt offline und prüft auch diese Daten (Typ, Länge, Wertebereich) |
 | Webserver | Nur `127.0.0.1`, nur lesende GET-Endpunkte, Pfadprüfung gegen Directory Traversal, Security-Header |
 | Konfiguration | Zugangsdaten außerhalb des Web-Roots: `/etc/infodisplay` (640) bzw. `%APPDATA%` (nur Benutzer) |
-| Dienst | Eigener Systembenutzer ohne Login, systemd-Härtung (`ProtectSystem=strict`, `NoNewPrivileges`, …) |
+| Dienst | Eigener Systembenutzer ohne Login, systemd-Härtung (`ProtectSystem=strict`, `NoNewPrivileges`, …); einzige Sonderberechtigung `CAP_SYS_TIME` (Uhr stellen, nur mit Zeitstempeln angemeldeter Sender, nur Werte ab 2024) |
 | Logging | Zentrales, rotierendes Log; abgelehnte Anmeldungen und Verstöße werden protokolliert |
 
 *Nicht zutreffend:* Prepared Statements/PDO (keine Datenbank), Sessions und CSRF-Tokens (keine Anmeldung im
@@ -568,6 +569,9 @@ Browser, keine schreibenden Endpunkte). Die Bluetooth-Verbindung ist durch die K
 | Popup „Übersetzen? Deutsch / Englisch“ oben rechts | Ab 1.2.2 abgeschaltet: Update einspielen (Abschnitt 9) und Pi neu starten. Prüfen: `cat /etc/chromium/policies/managed/infodisplay.json` |
 | Kein Wetter / keine Schlagzeilen | Am PC `sender.py --test` ausführen: Fehlermeldungen zeigen, ob Proxy (`[internet] proxy`) oder Feed-Adresse falsch ist. Sender-Log auf „Feed nicht lesbar“ / „Wetter nicht abrufbar“ prüfen. Pi und PC müssen ab Version 1.4.0 laufen |
 | Mauszeiger sichtbar | Ab 1.3.0 wird er beim Start ausgeblendet und in die Ecke geschoben (`wlrctl`, wird von `install.sh` installiert). Sonst Maus einmal bewegen oder abstecken – im Betrieb wird keine Maus gebraucht |
+| Falsche Uhrzeit (Pi ohne Internet) | Der Pi hat keine Uhr mit Batterie und stellt sich ohne Internet nicht selbst. Ab 1.9.0 übernimmt er die Zeit vom PC, sobald dieser verbunden ist (Log: „Systemzeit vom PC übernommen“). Bis dahin – z. B. direkt nach dem Einschalten – kann sie falsch sein. Abhilfe dafür: Pi 5 mit RTC-Batterie bzw. RTC-Modul beim Pi 4 |
+| Uhrzeit genau 1 oder 2 Stunden falsch | Zeitzone des Pi falsch: `timedatectl` prüfen, setzen mit `sudo timedatectl set-timezone Europe/Vienna` |
+| Log: „Systemzeit kann nicht gestellt werden“ | Dienst ohne Berechtigung (alte Dienstdatei) → `sudo ./install.sh` erneut ausführen |
 | Schwarzer Bildschirm | `curl 127.0.0.1:8080/healthz`; Autostart: `cat ~/.config/labwc/autostart` |
 
 **Logs:**
@@ -583,6 +587,7 @@ Eine JSON-Nachricht pro Zeile (UTF-8, abgeschlossen mit `\n`), Protokollversion 
 | Richtung | Typ | Inhalt |
 |---|---|---|
 | PC → Pi | `hello` | `v`, `token`, `client`, `app_version` – muss die erste Nachricht sein |
+| PC → Pi | *(alle)* | `sent_at_ms` – Uhrzeit des PCs (ms seit 1970, UTC); der Pi stellt danach seine Uhr (bei `hello` und `ping`) |
 | Pi → PC | `welcome` / `error` | `server_version` bzw. `reason` (`auth`, `protocol_version`) |
 | PC → Pi | `media` | `active`, `status` (playing/paused/stopped), `title`, `artist`, `album`, `source_app`, `position_ms`, `duration_ms`, `cover_id` |
 | PC → Pi | `cover` | `id` (Hash), `mime`, `b64` – nur bei Titelwechsel |

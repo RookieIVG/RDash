@@ -12,6 +12,7 @@ import socket
 import threading
 
 from . import protocol
+from .clock_sync import ClockSync
 from .logger import get_logger
 from .ratelimit import KeyedRateLimiter, TokenBucket
 
@@ -47,6 +48,7 @@ class LinkServer:
     def __init__(self, cfg, state, app_version):
         self.cfg = cfg
         self.state = state
+        self.clock = ClockSync(cfg.time_sync_from_pc)
         self.app_version = app_version
         self._stop = threading.Event()
         self._active = None
@@ -148,6 +150,7 @@ class LinkServer:
             self._send(conn, {"type": "error", "reason": "auth"})
             log.warning("Anmeldung mit falschem Token von %s abgelehnt", peer)
             return None
+        self.clock.offer(hello.get("sent_at_ms"))     # erst nach erfolgreicher Anmeldung
         return protocol.clean_text(hello.get("client"), 60) or peer
 
     def _handle_client(self, conn, addr, label):
@@ -247,6 +250,7 @@ class LinkServer:
             self.state.set_news(items)
             log.debug("%d Schlagzeilen empfangen", len(items))
         elif kind == "ping":
+            self.clock.offer(message.get("sent_at_ms"))
             self.state.touch()
         elif kind == "bye":
             log.info("Sender meldet sich ab")
