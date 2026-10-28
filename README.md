@@ -29,11 +29,12 @@ zusammen mit **Uhrzeit und Datum** im Vollbild auf einem HDMI-Monitor an.
 8. [Konfiguration](#8-konfiguration)
 9. [Update auf eine neue Version](#9-update-auf-eine-neue-version)
 10. [PC wechseln (neuen Sender einrichten)](#10-pc-wechseln-neuen-sender-einrichten)
-11. [Sicherheitskonzept](#11-sicherheitskonzept)
-12. [Fehlersuche](#12-fehlersuche)
-13. [Nachrichtenprotokoll](#13-nachrichtenprotokoll)
-14. [Versionierung und Changelog](#14-versionierung-und-changelog)
-15. [Ordnerstruktur](#15-ordnerstruktur)
+11. [Bedienung am Pi (Anzeige starten, Uhrzeit, ohne SSH)](#11-bedienung-am-pi-anzeige-starten-uhrzeit-ohne-ssh)
+12. [Sicherheitskonzept](#12-sicherheitskonzept)
+13. [Fehlersuche](#13-fehlersuche)
+14. [Nachrichtenprotokoll](#14-nachrichtenprotokoll)
+15. [Versionierung und Changelog](#15-versionierung-und-changelog)
+16. [Ordnerstruktur](#16-ordnerstruktur)
 
 **Umzug auf einen anderen PC (z. B. Firmen-PC):** eigene Schritt-für-Schritt-Anleitung in
 [`ANLEITUNG-FIRMEN-PC.md`](ANLEITUNG-FIRMEN-PC.md) – inkl. Übertragung der Config und Bluetooth-Kopplung.
@@ -404,7 +405,7 @@ dann `rotation = 0` lassen.
 | debug | `tcp_test_port` | 0 | TCP-Testzugang (nur zum Testen) |
 | logging | `file` / `level` | /var/log/infodisplay/… / INFO | Zentrales Log |
 
-Nach Änderungen: `sudo systemctl restart infodisplay`
+Nach Änderungen: `sudo systemctl restart infodisplay` (ohne SSH-Zugang: Abschnitt 11.3)
 
 ### Windows – `%APPDATA%\InfoDisplay\config.ini`
 
@@ -531,7 +532,105 @@ Den neuen Token in `%APPDATA%\InfoDisplay\config.ini` am neuen PC eintragen und 
 
 ---
 
-## 11. Sicherheitskonzept
+## 11. Bedienung am Pi (Anzeige starten, Uhrzeit, ohne SSH)
+
+### 11.1 Anzeige manuell starten
+
+Die Anzeige besteht aus zwei Teilen: dem **Dienst** `infodisplay` (empfängt die Daten, liefert die Seite) und dem
+**Browser im Vollbild** (Kiosk), der die Seite zeigt.
+
+**Dienst:**
+```bash
+sudo systemctl start infodisplay      # starten
+sudo systemctl restart infodisplay    # neu starten (z. B. nach Config-Änderung)
+systemctl status infodisplay          # läuft er? -> "active (running)"
+curl http://127.0.0.1:8080/healthz    # -> {"status":"ok"}
+```
+
+**Vollbild-Anzeige – direkt am Pi** (Terminal am Desktop: **Strg+Alt+T**):
+```bash
+pkill chromium; /opt/infodisplay/kiosk.sh &
+```
+`pkill chromium` beendet einen bereits laufenden Browser, damit nicht zwei Fenster offen sind. Beenden der
+Vollbild-Anzeige: **Alt+F4**.
+
+**Vollbild-Anzeige – per SSH** (als dein normaler Benutzer, z. B. `admin`, nicht mit `sudo`):
+```bash
+pkill chromium
+WAYLAND_DISPLAY=wayland-0 XDG_RUNTIME_DIR=/run/user/$(id -u) nohup /opt/infodisplay/kiosk.sh >/dev/null 2>&1 &
+```
+Bleibt der Monitor leer: `ls /run/user/$(id -u)/` zeigt den Namen des Bildschirms – steht dort z. B. `wayland-1`,
+diesen statt `wayland-0` verwenden.
+
+**Am einfachsten:** `sudo reboot` – danach starten Dienst und Anzeige automatisch.
+
+**Zum Testen ohne Vollbild:** Chromium am Pi-Desktop normal öffnen und `http://127.0.0.1:8080/` aufrufen,
+**F11** schaltet Vollbild ein/aus.
+
+| Wenn nichts erscheint | Befehl |
+|---|---|
+| Läuft der Dienst? Fehlermeldung? | `sudo journalctl -u infodisplay -n 30 --no-pager` |
+| Ist der Autostart eingetragen? | `cat ~/.config/labwc/autostart` → muss `/opt/infodisplay/kiosk.sh &` enthalten |
+| Ist Chromium installiert? | `command -v chromium chromium-browser` |
+
+Fehlt der Autostart-Eintrag: `sudo ./install.sh` im Ordner `~/infodisplay/pi-display/install` erneut ausführen –
+als normaler Benutzer mit `sudo`, nicht als root angemeldet.
+
+### 11.2 Uhrzeit von Hand stellen
+
+Normalerweise nicht nötig: Sobald der PC verbunden ist, stellt der Pi seine Uhr nach der PC-Zeit
+(`[time] sync_from_pc`). Von Hand stellen nur, bevor der PC das erste Mal verbunden ist oder beim Testen ohne PC.
+
+**1. Zeitzone prüfen** – `Time zone` muss `Europe/Vienna` sein:
+```bash
+timedatectl
+sudo timedatectl set-timezone Europe/Vienna     # falls nicht
+```
+Liegt die Uhr genau 1 oder 2 Stunden daneben, war es nur die Zeitzone.
+
+**2. Uhrzeit stellen** (Ortszeit):
+```bash
+sudo date -s "2026-10-28 14:30:00"
+```
+Die Anzeige übernimmt die neue Zeit sofort. (`sudo timedatectl set-time …` funktioniert nur, wenn die automatische
+Zeitsynchronisation aus ist – sonst Meldung „Automatic time synchronization is enabled“. `date -s` geht immer.)
+
+**3. Für den nächsten Start merken:**
+```bash
+sudo fake-hwclock save 2>/dev/null; sudo hwclock -w 2>/dev/null; true
+```
+Der Pi hat ohne Batterie keine laufende Uhr: Nach dem Ausschalten startet er mit der zuletzt gespeicherten Zeit,
+bis sich der PC verbindet. Dauerhaft hilft nur eine Uhr mit Batterie (Pi 5: RTC-Batterie, Pi 4: RTC-Modul).
+
+### 11.3 Config ändern ohne SSH
+
+Die Einstellungen stehen in `/etc/infodisplay/config.ini` (die Datei `config.example.ini` im Projektordner ist nur
+die Vorlage).
+
+**A – direkt am Pi mit Tastatur** (geht immer):
+1. USB-Tastatur (und ggf. Maus) an den Pi anstecken.
+2. **Alt+F4** schließt die Vollbild-Anzeige, der Desktop erscheint.
+3. Terminal öffnen: **Strg+Alt+T** (oder Himbeer-Menü → *Zubehör → Terminal*).
+4. Bearbeiten:
+   ```bash
+   sudo nano /etc/infodisplay/config.ini
+   ```
+   Speichern: **Strg+O**, **Enter** · Beenden: **Strg+X**
+5. `sudo reboot` – danach startet die Anzeige wieder automatisch.
+
+Bleibt der Bildschirm nach Alt+F4 schwarz: **Strg+Alt+F2** wechselt zu einer Textkonsole – dort mit Benutzer und
+Passwort anmelden und Schritt 4 und 5 ausführen.
+
+**B – LAN-Kabel direkt zwischen Laptop und Pi** (kein WLAN/Firmennetz nötig): Netzwerkkabel direkt verbinden,
+ca. eine Minute warten, dann in PowerShell meist:
+```powershell
+ssh admin@RDash.local
+```
+(Benutzer und Hostname wie bei deinem Pi.) Klappt das nicht, Weg A verwenden.
+
+---
+
+## 12. Sicherheitskonzept
 
 | Maßnahme | Umsetzung |
 |---|---|
@@ -552,7 +651,7 @@ Browser, keine schreibenden Endpunkte). Die Bluetooth-Verbindung ist durch die K
 
 ---
 
-## 12. Fehlersuche
+## 13. Fehlersuche
 
 | Problem | Lösung |
 |---|---|
@@ -569,10 +668,10 @@ Browser, keine schreibenden Endpunkte). Die Bluetooth-Verbindung ist durch die K
 | Popup „Übersetzen? Deutsch / Englisch“ oben rechts | Ab 1.2.2 abgeschaltet: Update einspielen (Abschnitt 9) und Pi neu starten. Prüfen: `cat /etc/chromium/policies/managed/infodisplay.json` |
 | Kein Wetter / keine Schlagzeilen | Am PC `sender.py --test` ausführen: Fehlermeldungen zeigen, ob Proxy (`[internet] proxy`) oder Feed-Adresse falsch ist. Sender-Log auf „Feed nicht lesbar“ / „Wetter nicht abrufbar“ prüfen. Pi und PC müssen ab Version 1.4.0 laufen |
 | Mauszeiger sichtbar | Ab 1.3.0 wird er beim Start ausgeblendet und in die Ecke geschoben (`wlrctl`, wird von `install.sh` installiert). Sonst Maus einmal bewegen oder abstecken – im Betrieb wird keine Maus gebraucht |
-| Falsche Uhrzeit (Pi ohne Internet) | Der Pi hat keine Uhr mit Batterie und stellt sich ohne Internet nicht selbst. Ab 1.9.0 übernimmt er die Zeit vom PC, sobald dieser verbunden ist (Log: „Systemzeit vom PC übernommen“). Bis dahin – z. B. direkt nach dem Einschalten – kann sie falsch sein. Abhilfe dafür: Pi 5 mit RTC-Batterie bzw. RTC-Modul beim Pi 4 |
+| Falsche Uhrzeit (Pi ohne Internet) | Der Pi hat keine Uhr mit Batterie und stellt sich ohne Internet nicht selbst. Ab 1.9.0 übernimmt er die Zeit vom PC, sobald dieser verbunden ist (Log: „Systemzeit vom PC übernommen“). Bis dahin – z. B. direkt nach dem Einschalten – kann sie falsch sein. Von Hand stellen: Abschnitt 11.2. Abhilfe dafür: Pi 5 mit RTC-Batterie bzw. RTC-Modul beim Pi 4 |
 | Uhrzeit genau 1 oder 2 Stunden falsch | Zeitzone des Pi falsch: `timedatectl` prüfen, setzen mit `sudo timedatectl set-timezone Europe/Vienna` |
 | Log: „Systemzeit kann nicht gestellt werden“ | Dienst ohne Berechtigung (alte Dienstdatei) → `sudo ./install.sh` erneut ausführen |
-| Schwarzer Bildschirm | `curl 127.0.0.1:8080/healthz`; Autostart: `cat ~/.config/labwc/autostart` |
+| Schwarzer Bildschirm / Anzeige weg | `curl 127.0.0.1:8080/healthz`; Autostart: `cat ~/.config/labwc/autostart`; Anzeige von Hand starten: Abschnitt 11.1 |
 
 **Logs:**
 - Pi: `sudo journalctl -u infodisplay -f` oder `/var/log/infodisplay/infodisplay.log`
@@ -580,7 +679,7 @@ Browser, keine schreibenden Endpunkte). Die Bluetooth-Verbindung ist durch die K
 
 ---
 
-## 13. Nachrichtenprotokoll
+## 14. Nachrichtenprotokoll
 
 Eine JSON-Nachricht pro Zeile (UTF-8, abgeschlossen mit `\n`), Protokollversion `v = 1`.
 
@@ -602,7 +701,7 @@ Sender-Modul in `windows-sender/includes`, Prüfung in `pi-display/includes/prot
 
 ---
 
-## 14. Versionierung und Changelog
+## 15. Versionierung und Changelog
 
 Versionen nach **Semantic Versioning** (`MAJOR.MINOR.PATCH`) in der Datei `VERSION`.
 Version und Changelog werden gemeinsam erhöht:
@@ -617,7 +716,7 @@ Die Versionsnummer steht in beiden Logs, am Pi in `/opt/infodisplay/VERSION` und
 
 ---
 
-## 15. Ordnerstruktur
+## 16. Ordnerstruktur
 
 ```
 infodisplay/

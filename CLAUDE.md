@@ -9,7 +9,7 @@ Vollständige Anleitung: `README.md`.
 - `pi-display/` – Python 3 nur Standardbibliothek, Einstieg `receiver.py`; Web-Root `pi-display/web/` (HTML/CSS/JS, kein Build)
 - `tools/` – `bump_version.py` (Version + Changelog), `fake_sender.py` (Testdaten)
 - Protokoll: eine JSON-Nachricht pro Zeile, `v = 1`. Änderungen immer an **beiden** Seiten
-  (`windows-sender/includes/protocol.py` und `pi-display/includes/protocol.py`) und im README-Abschnitt 13.
+  (`windows-sender/includes/protocol.py` und `pi-display/includes/protocol.py`) und im README-Abschnitt 14.
 
 ## Verbindliche Vorgaben
 - UI-Sprache Deutsch; Code-Kommentare Deutsch; README Deutsch

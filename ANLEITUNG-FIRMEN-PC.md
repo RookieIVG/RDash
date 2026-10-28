@@ -353,4 +353,4 @@ Der Sender startet dann bei jeder Anmeldung (ohne automatischen Neustart nach ei
 - Firmen-PC: `%LOCALAPPDATA%\InfoDisplay\logs\sender.log` (für Details `[logging] level = DEBUG`)
 - Pi: `sudo journalctl -u infodisplay -f`
 
-Weitere Details stehen in der `README.md` (Abschnitte 5, 8, 10 und 12).
+Weitere Details stehen in der `README.md` (Abschnitte 5, 8, 10, 11 und 13).
