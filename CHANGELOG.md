@@ -4,6 +4,11 @@ Alle wesentlichen Änderungen am InfoDisplay. Format nach [Keep a Changelog](htt
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 Neue Einträge werden mit `python tools/bump_version.py` automatisch erzeugt.
 
+## [1.9.1] – 2026-10-28
+
+### Geändert
+- README: neuer Abschnitt 11 „Bedienung am Pi“ – Anzeige manuell starten, Uhrzeit von Hand stellen, Config ändern ohne SSH (Tastatur am Pi, LAN-Kabel direkt)
+
 ## [1.9.0] – 2026-10-28
 
 ### Hinzugefügt
