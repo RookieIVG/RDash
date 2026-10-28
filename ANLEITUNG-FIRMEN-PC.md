@@ -335,6 +335,8 @@ der Sender selbst neu. Solange keine Verbindung besteht, zeigt das Display nur U
 | Sender-Log: `Konfiguration fehlerhaft` | Die Meldung nennt den Eintrag. Häufig: `pi_mac` falsch geschrieben (`AA:BB:CC:DD:EE:FF`) |
 | Anzeige springt zwischen zwei PCs hin und her | Alter PC sendet noch → Abschnitt 7 |
 | Keine Termine | Outlook (Classic) muss laufen; im „neuen Outlook“ gibt es keine Termine |
+| `CERTIFICATE_VERIFY_FAILED … Missing Authority Key Identifier` | Firmen-Firewall prüft verschlüsselte Verbindungen (TLS-Inspection); ihre Zertifikate erfüllen die strenge Zusatzprüfung von Python 3.13 nicht. Ab Version 1.10.2 behoben (`[internet] strict_tls = false`, Standard) – Sender aktualisieren |
+| `CERTIFICATE_VERIFY_FAILED … unable to get local issuer certificate` | Die Zertifizierungsstelle der Firma fehlt im Windows-Zertifikatsspeicher des PCs → IT fragen. Zertifikatsprüfung **nicht** abschalten |
 | Kein Wetter / keine Schlagzeilen | `--test` ausführen: „timed out“ / „407“ → Proxy fehlt bzw. verlangt Anmeldung (IT). Nutzt die Firma eine automatische Proxy-Konfiguration (PAC), den Proxy in `[internet] proxy` fest eintragen |
 | Aufgabenplanung gesperrt | Autostart per Verknüpfung (siehe unten) |
 
