@@ -467,8 +467,57 @@ sudo ./install.sh
 sudo reboot
 ```
 
+Variante C (**USB-Stick, ohne Internet am Pi**) – siehe 9.1.
+
 `install.sh` kopiert das Programm neu nach `/opt/infodisplay`, aktualisiert den Dienst und startet ihn neu.
-Der Neustart des Pi sorgt dafür, dass auch die Anzeige im Browser die neue Version lädt.
+Der Neustart des Pi sorgt dafür, dass auch die Anzeige im Browser die neue Version lädt. Ohne Internet installiert
+`install.sh` nur dann Pakete nach, wenn etwas fehlt – bei einem Update ist normalerweise alles schon vorhanden.
+
+### 9.1 Pi per USB-Stick aktualisieren (ohne Internet)
+
+Es gibt eigene Pakete für Pi und PC: `infodisplay-pi-<Version>.zip` (nur Pi) und `infodisplay-pc-<Version>.zip`
+(nur PC). Erzeugt werden sie mit `tools/make_packages.sh`.
+
+**1. Am PC:** `infodisplay-pi-<Version>.zip` auf einen USB-Stick kopieren (nicht entpacken). Jeder normale Stick
+(FAT32/exFAT) geht.
+
+**2. Am Pi:** Stick anstecken und ein Terminal öffnen – direkt am Pi: **Alt+F4** (Anzeige schließen), dann
+**Strg+Alt+T**; oder per SSH. Der Pi-Desktop bindet den Stick automatisch unter `/media/<benutzer>/<Stickname>` ein:
+```bash
+ls /media/$USER/*/infodisplay-pi-*.zip
+```
+Erscheint dort nichts (z. B. kein Desktop angemeldet), den Stick von Hand einbinden:
+```bash
+lsblk                                   # Stick suchen, meist sda1
+sudo mkdir -p /mnt/usb && sudo mount /dev/sda1 /mnt/usb
+ls /mnt/usb/infodisplay-pi-*.zip        # in den Befehlen unten dann /mnt/usb statt /media/$USER/* verwenden
+```
+
+**3. Entpacken** (ersetzt die alten Programmdateien in `~/infodisplay`; die Config in `/etc/infodisplay` bleibt):
+```bash
+ZIP=$(ls /media/$USER/*/infodisplay-pi-*.zip | sort -V | tail -1); echo "$ZIP"
+rm -rf ~/infodisplay
+python3 -m zipfile -e "$ZIP" ~/
+cat ~/infodisplay/VERSION               # zeigt die neue Version
+```
+
+**4. Installieren:**
+```bash
+cd ~/infodisplay/pi-display/install
+chmod +x install.sh
+sudo ./install.sh
+```
+
+**5. Stick abmelden und neu starten:**
+```bash
+cd ~ && sync
+sudo umount /media/$USER/* 2>/dev/null; sudo umount /mnt/usb 2>/dev/null; true
+sudo reboot
+```
+Nach dem Neustart: `cat /opt/infodisplay/VERSION` zeigt die installierte Version.
+
+> War `~/infodisplay` vorher ein `git clone`, ist es danach ein normaler Ordner. Spätere Updates wieder per USB-Stick
+> – oder bei vorhandenem Internet erneut wie unter „Von Variante B auf A wechseln“.
 
 > Neue Einstellungen einer Version stehen in `pi-display/config/config.example.ini` und im `CHANGELOG.md`.
 > Sie werden **nicht** automatisch in die bestehende Config übernommen – bei Bedarf von Hand in
@@ -749,6 +798,7 @@ infodisplay/
 ├── ANLEITUNG-FIRMEN-PC.md      Umzug auf einen anderen PC (Firmen-PC), Config übertragen, Kopplung
 ├── tools/
 │   ├── bump_version.py         Version + Changelog automatisch fortschreiben
+│   ├── make_packages.sh        Pakete erzeugen: komplett, nur Pi, nur PC
 │   └── fake_sender.py          Testsender mit Beispieldaten
 ├── windows-sender/
 │   ├── sender.py               Hauptprogramm

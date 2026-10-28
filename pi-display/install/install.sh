@@ -38,14 +38,28 @@ if [[ "${1:-}" == "--uninstall" ]]; then
 fi
 
 # ------------------------------------------------------------------ Pakete
-step "Installiere benötigte Pakete"
-apt-get update -qq
-apt-get install -y -qq python3 bluez curl >/dev/null
+# Nur fehlende Pakete installieren – so funktioniert ein Update auch ohne Internet (z. B. per USB-Stick),
+# solange alles Nötige schon vorhanden ist.
+step "Prüfe benötigte Pakete"
+installed() { dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q "install ok installed"; }
+APT_UPDATED=0
+apt_install() {   # apt_install <paket> – liefert 1, wenn es nicht geht (z. B. offline)
+  installed "$1" && return 0
+  if [[ $APT_UPDATED -eq 0 ]]; then
+    apt-get update -qq >/dev/null 2>&1 || warn "Paketlisten nicht aktualisierbar (kein Internet?)"
+    APT_UPDATED=1
+  fi
+  apt-get install -y -qq "$1" >/dev/null 2>&1
+}
+for pkg in python3 bluez curl; do
+  apt_install "$pkg" || { echo "Paket '$pkg' fehlt und kann nicht installiert werden (Internet nötig) – Abbruch" >&2; exit 1; }
+done
 # wlr-randr dreht den Bildschirm für das Hochformat ([ui] rotation), wlrctl versteckt den Mauszeiger
-apt-get install -y -qq wlr-randr >/dev/null 2>&1 || warn "wlr-randr nicht installierbar – Drehung nur über die Bildschirmkonfiguration des Desktops möglich."
-apt-get install -y -qq wlrctl >/dev/null 2>&1 || warn "wlrctl nicht installierbar – Mauszeiger verschwindet erst nach einer Mausbewegung."
+apt_install wlr-randr || warn "wlr-randr nicht installierbar – Drehung nur über die Bildschirmkonfiguration des Desktops möglich."
+apt_install wlrctl || warn "wlrctl nicht installierbar – Mauszeiger verschwindet erst nach einer Mausbewegung."
 if ! command -v chromium >/dev/null && ! command -v chromium-browser >/dev/null; then
-  apt-get install -y -qq chromium >/dev/null || apt-get install -y -qq chromium-browser >/dev/null
+  apt_install chromium || apt_install chromium-browser \
+    || { echo "Chromium fehlt und kann nicht installiert werden (Internet nötig) – Abbruch" >&2; exit 1; }
 fi
 python3 -c 'import socket,sys; sys.exit(0 if hasattr(socket,"AF_BLUETOOTH") else 1)' \
   || { echo "Python ohne Bluetooth-Unterstützung – Abbruch" >&2; exit 1; }
