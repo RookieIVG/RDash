@@ -8,6 +8,7 @@ Neue Einträge werden mit `python tools/bump_version.py` automatisch erzeugt.
 
 ### Geändert
 - Liedwechsel schneller: Titel/Interpret werden vor dem Cover gesendet, Cover auf höchstens 40 KB verkleinert ([media] cover_max_kb)
+- Cover wird in Stücken übertragen (neue Nachricht cover_chunk): ein neuer Titel muss nicht auf ein großes Cover warten, überholte Cover werden abgebrochen. Der Pi nimmt weiterhin auch ganze Cover an
 - Verbindung bricht bei großen Nachrichten nicht mehr ab: Sendelimit richtet sich nach der Größe (Bluetooth mit ab 1 KB/s)
 - Pi: Hintergrund-Überblendung über die Grafikeinheit (ruckelt nicht mehr beim Liedwechsel), effizienteres Einlesen großer Nachrichten
 - README: Abschnitt „Bluetooth-Verbindung verbessern“ (WLAN/Bluetooth-Störungen, Energiesparen, Messen)

@@ -190,7 +190,7 @@ class LinkServer:
         self.state.set_link(True, client=client, address=peer)
 
         try:
-            self._receive_loop(conn, reader, peer)
+            self._receive_loop(conn, reader, peer, protocol.CoverAssembler())
         finally:
             self._close(conn)
             with self._active_lock:
@@ -201,7 +201,7 @@ class LinkServer:
                 self.state.set_link(False)
                 log.info("Sender '%s' getrennt", client)
 
-    def _receive_loop(self, conn, reader, peer):
+    def _receive_loop(self, conn, reader, peer, covers):
         conn.settimeout(self.cfg.idle_timeout)
         bucket = TokenBucket(self.cfg.msg_rate_per_sec, self.cfg.msg_burst)
         violations = 0
@@ -230,7 +230,7 @@ class LinkServer:
                     return
                 continue
             try:
-                if not self._dispatch(protocol.decode(line)):
+                if not self._dispatch(protocol.decode(line), covers):
                     return
             except protocol.ProtocolError as exc:
                 violations += 1
@@ -238,12 +238,16 @@ class LinkServer:
                 if violations > self.cfg.max_violations:
                     return
 
-    def _dispatch(self, message):
+    def _dispatch(self, message, covers):
         """Verarbeitet eine Nachricht. False = Verbindung beenden."""
         kind = message["type"]
         if kind == "media":
             self.state.set_media(protocol.parse_media(message.get("data")))
-        elif kind == "cover":
+        elif kind == "cover_chunk":
+            complete = covers.add(*protocol.parse_cover_chunk(message.get("data")))
+            if complete:
+                self.state.set_cover(*complete)
+        elif kind == "cover":            # ganzes Cover in einer Nachricht (Sender bis 1.9.x)
             self.state.set_cover(*protocol.parse_cover(message.get("data")))
         elif kind == "calendar":
             events = protocol.parse_calendar(message.get("data"))

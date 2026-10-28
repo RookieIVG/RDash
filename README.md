@@ -678,7 +678,8 @@ Browser, keine schreibenden Endpunkte). Die Bluetooth-Verbindung ist durch die K
 ### Bluetooth-Verbindung verbessern (Liedwechsel hängt, Verbindung bricht ab)
 
 Beim Liedwechsel wird das Cover übertragen – mit Abstand die größte Nachricht. Bluetooth schafft je nach Umgebung
-nur 10–100 KB/s. Ab Version 1.10.0 kommt der Titel deshalb **zuerst** (sofort sichtbar), das Cover folgt; das
+nur 10–100 KB/s. Ab Version 1.10.0 kommt der Titel deshalb **zuerst** (sofort sichtbar), das Cover folgt in kleinen
+Stücken – ein neuer Titel drängt sich dazwischen, ein überholtes Cover wird abgebrochen; das
 Cover wird auf höchstens `cover_max_kb` (40 KB) verkleinert, und große Nachrichten brechen die Verbindung nicht
 mehr ab, nur weil sie länger brauchen. Ist es trotzdem zäh, liegt es an der Funkstrecke:
 
@@ -710,7 +711,8 @@ Eine JSON-Nachricht pro Zeile (UTF-8, abgeschlossen mit `\n`), Protokollversion 
 | PC → Pi | *(alle)* | `sent_at_ms` – Uhrzeit des PCs (ms seit 1970, UTC); der Pi stellt danach seine Uhr (bei `hello` und `ping`) |
 | Pi → PC | `welcome` / `error` | `server_version` bzw. `reason` (`auth`, `protocol_version`) |
 | PC → Pi | `media` | `active`, `status` (playing/paused/stopped), `title`, `artist`, `album`, `source_app`, `position_ms`, `duration_ms`, `cover_id` |
-| PC → Pi | `cover` | `id` (Hash), `mime`, `b64` – nur bei Titelwechsel |
+| PC → Pi | `cover_chunk` | `id`, `mime`, `index`, `total`, `b64` (Teil) – Cover in Stücken à 4096 Zeichen, nur bei Titelwechsel; dazwischen dürfen andere Nachrichten kommen, ein überholtes Cover wird abgebrochen |
+| PC → Pi | `cover` | `id` (Hash), `mime`, `b64` – ganzes Cover in einer Nachricht (Sender bis 1.9.x, wird weiter angenommen) |
 | PC → Pi | `calendar` | `events[]` mit `subject`, `location`, `start`, `end` (lokal, `YYYY-MM-DDTHH:MM`), `all_day` |
 | PC → Pi | `weather` | `place`, `temp`, `code` (WMO-Wettercode), `is_day`, `t_max`, `t_min` – optional, alle 15 min |
 | PC → Pi | `news` | `items[]` mit `title`, `source`, `text` (Kurztext, optional) – max. 30, alle 15 min |
