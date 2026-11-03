@@ -259,6 +259,8 @@ class LinkServer:
             items = protocol.parse_news(message.get("data"))
             self.state.set_news(items)
             log.debug("%d Schlagzeilen empfangen", len(items))
+        elif kind == "attendance":
+            self.state.set_attendance(protocol.parse_attendance(message.get("data")))
         elif kind == "ping":
             self.clock.offer(message.get("sent_at_ms"))
             self.state.touch()

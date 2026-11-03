@@ -57,6 +57,10 @@ def news(items):
     return {"type": "news", "sent_at_ms": now_ms(), "data": {"items": items}}
 
 
+def attendance(items):
+    return {"type": "attendance", "sent_at_ms": now_ms(), "data": {"items": items}}
+
+
 def ping():
     return {"type": "ping", "sent_at_ms": now_ms()}
 

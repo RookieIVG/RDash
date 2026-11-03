@@ -435,6 +435,33 @@
     setText("weather-text", parts.filter(Boolean).join(" · "));
   }
 
+  // ---------------------------------------------------------------- Anwesenheit (vom PC, SAP-Zeiterfassung)
+  var attendanceStamp = null;
+
+  function shortDate(iso) {
+    var p = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
+    return p ? +p[3] + "." + +p[2] + "." : "";
+  }
+
+  function renderAttendance() {
+    var att = state.attendance;
+    var items = fresh(att) ? att.items : [];
+    $("attendance").hidden = !items.length;
+    if (!items.length || att.received_ms === attendanceStamp) { return; }
+    attendanceStamp = att.received_ms;
+    var list = $("attendance-list");
+    list.textContent = "";
+    items.forEach(function (p) {
+      var li = el("li", "att-row att-" + p.category);
+      var dot = el("span", "att-dot");
+      dot.setAttribute("aria-hidden", "true");
+      li.appendChild(dot);
+      li.appendChild(el("span", "att-name", p.name));
+      li.appendChild(el("span", "att-status", p.status + (p.until ? " bis " + shortDate(p.until) : "")));
+      list.appendChild(li);
+    });
+  }
+
   // ---------------------------------------------------------------- Schlagzeilen (vom PC, RSS/Atom)
   var newsIndex = 0;
   var newsShownAt = 0;
@@ -516,6 +543,7 @@
     renderMedia();
     renderCalendar();
     renderWeather();
+    renderAttendance();
     tickNews();
   }
 

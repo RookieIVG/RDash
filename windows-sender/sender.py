@@ -125,7 +125,7 @@ class LinkManager:
             self.generation += 1
             self.connected.set()
             self.covers.resend()
-            for key in ("calendar", "weather", "news"):
+            for key in ("calendar", "weather", "news", "attendance"):
                 if key in self._snapshot:
                     await self.publish(self._snapshot[key])
 
@@ -231,6 +231,22 @@ async def news_loop(cfg, link):
         await asyncio.sleep(cfg.news_refresh_minutes * 60)
 
 
+async def attendance_loop(cfg, link):
+    from includes.attendance import fetch_attendance
+    last = None
+    while True:
+        try:
+            items = await asyncio.to_thread(fetch_attendance, cfg)
+            # nur bei Änderung senden (klein halten, Bluetooth schonen); nach Neuverbindung sendet der Supervisor
+            if items is not None and items != last:
+                if await link.publish(protocol.attendance(items), remember="attendance"):
+                    last = items
+                    log.debug("Anwesenheit gesendet: %s", ", ".join(f"{i['name']}={i['category']}" for i in items))
+        except Exception as exc:
+            log.warning("Anwesenheit nicht abrufbar: %s", exc)
+        await asyncio.sleep(cfg.att_refresh_minutes * 60)
+
+
 async def heartbeat_loop(cfg, link):
     while True:
         await asyncio.sleep(cfg.heartbeat_seconds)
@@ -250,6 +266,8 @@ async def run(cfg, version):
         tasks.append(weather_loop(cfg, link))
     if cfg.news_enabled and cfg.feeds:
         tasks.append(news_loop(cfg, link))
+    if cfg.att_enabled and cfg.att_persons:
+        tasks.append(attendance_loop(cfg, link))
     try:
         await asyncio.gather(*tasks)
     finally:
@@ -276,6 +294,9 @@ async def run_test(cfg):
     if cfg.news_enabled:
         from includes.web_feeds import fetch_news
         print("SCHLAGZEILEN:", json.dumps(fetch_news(cfg), ensure_ascii=False, indent=2))
+    if cfg.att_enabled:
+        from includes.attendance import fetch_attendance
+        print("ANWESENHEIT:", json.dumps(fetch_attendance(cfg), ensure_ascii=False, indent=2))
 
 
 def main():
