@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Installiert den InfoDisplay-Sender für den aktuellen Benutzer.
 
@@ -41,9 +41,13 @@ if ($Uninstall) {
 
 # ---------------------------------------------------------------- Python suchen
 Write-Step "Suche Python 3.12+ (64 Bit)"
-$candidates = @()
-if ($Python) { $candidates += ,@($Python) }
-$candidates += ,@("py", "-3.13"), ,@("py", "-3.12"), ,@("py", "-3.14"), ,@("py", "-3"), ,@("python")
+# Liste von Befehlen (je ein Array: Programm + Argumente). ArrayList, damit PowerShell die
+# inneren Arrays nicht zusätzlich verschachtelt.
+$candidates = New-Object System.Collections.ArrayList
+if ($Python) { [void]$candidates.Add(@($Python)) }
+foreach ($c in @(@("py", "-3.13"), @("py", "-3.12"), @("py", "-3.14"), @("py", "-3"), @("python"))) {
+    [void]$candidates.Add($c)
+}
 $PyCmd = $null
 foreach ($c in $candidates) {
     try {
@@ -60,12 +64,17 @@ if (-not $PyCmd) {
 Write-Host "    gefunden: $($PyCmd -join ' ')"
 
 # ---------------------------------------------------------------- Laufenden Sender beenden (Update)
-# Sonst sind python(w).exe in der venv gesperrt und das Update schlägt fehl
+# Sonst sind python(w).exe in der venv gesperrt und das Update schlägt fehl ("Unable to copy ...")
+Write-Step "Beende laufenden Sender"
 if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
-    Write-Step "Beende laufenden Sender"
     Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 2
 }
+# auch von Hand gestartete Sender aus dieser Umgebung (z. B. ein offenes --test-Fenster)
+$venvFull = [IO.Path]::GetFullPath($VenvDir)
+Get-Process -Name python, pythonw -ErrorAction SilentlyContinue |
+    Where-Object { $_.Path -and $_.Path.StartsWith($venvFull, [StringComparison]::OrdinalIgnoreCase) } |
+    Stop-Process -Force -ErrorAction SilentlyContinue
+Start-Sleep -Seconds 2
 
 # ---------------------------------------------------------------- Dateien kopieren
 Write-Step "Kopiere Programm nach $AppDir"
@@ -76,15 +85,37 @@ $versionFile = Join-Path $Src "..\VERSION"
 if (Test-Path $versionFile) { Copy-Item -Force $versionFile $AppDir }
 
 # ---------------------------------------------------------------- venv + Pakete
-Write-Step "Lege virtuelle Umgebung an und installiere Pakete"
+function Test-Python($py, $code) {
+    # Native Befehle mit umgeleiteter Fehlerausgabe würden unter "Stop" in PowerShell 5 abbrechen
+    $old = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+    try { & $py -c $code 2>$null | Out-Null; return ($LASTEXITCODE -eq 0) }
+    catch { return $false }
+    finally { $ErrorActionPreference = $old }
+}
+
 $exe = $PyCmd[0]; $pyArgs = @($PyCmd | Select-Object -Skip 1)
-& $exe @pyArgs -m venv $VenvDir
-if ($LASTEXITCODE -ne 0) { throw "venv konnte nicht angelegt werden" }
 $VenvPy  = Join-Path $VenvDir "Scripts\python.exe"
 $VenvPyw = Join-Path $VenvDir "Scripts\pythonw.exe"
-& $VenvPy -m pip install --upgrade pip --quiet
-& $VenvPy -m pip install -r (Join-Path $AppDir "requirements.txt") --quiet
-if ($LASTEXITCODE -ne 0) { throw "Paketinstallation fehlgeschlagen (Proxy? -> pip config / HTTPS_PROXY setzen)" }
+# Vorhandene, funktionierende Umgebung weiterverwenden (Update); nur neu anlegen, wenn sie fehlt oder kaputt ist
+if ((Test-Path $VenvPy) -and (Test-Python $VenvPy "import sys")) {
+    Write-Step "Verwende vorhandene virtuelle Umgebung"
+} else {
+    Write-Step "Lege virtuelle Umgebung an"
+    if (Test-Path $VenvDir) { Remove-Item -Recurse -Force $VenvDir }
+    & $exe @pyArgs -m venv $VenvDir
+    if ($LASTEXITCODE -ne 0) { throw "venv konnte nicht angelegt werden" }
+}
+
+Write-Step "Installiere bzw. prüfe Pakete"
+# Kein Selbst-Update von pip: unnötig und scheitert hinter Firmen-Proxys oft
+& $VenvPy -m pip install -r (Join-Path $AppDir "requirements.txt") --quiet --disable-pip-version-check
+if ($LASTEXITCODE -ne 0) {
+    if (Test-Python $VenvPy "import winrt.windows.media.control, win32com.client, PIL") {
+        Write-Host "    Hinweis: Pakete konnten nicht aktualisiert werden (Netz/Proxy) - vorhandene werden verwendet." -ForegroundColor Yellow
+    } else {
+        throw "Paketinstallation fehlgeschlagen (Proxy? -> `$env:HTTPS_PROXY setzen, siehe Anleitung)"
+    }
+}
 
 # ---------------------------------------------------------------- Konfiguration
 New-Item -ItemType Directory -Force -Path $ConfDir | Out-Null

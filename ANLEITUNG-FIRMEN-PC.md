@@ -327,6 +327,9 @@ der Sender selbst neu. Solange keine Verbindung besteht, zeigt das Display nur U
 |---|---|
 | `install.ps1` startet nicht („Ausführung von Skripts ist deaktiviert“ / „nicht digital signiert“) | `Unblock-File` (Abschnitt 2) und den Befehl genau wie angegeben mit `-ExecutionPolicy Bypass` ausführen. Hilft das nicht, ist es per Richtlinie gesperrt → IT |
 | „Kein passendes Python gefunden“ | Python 3.13 **64 Bit** installieren, PowerShell neu öffnen. Notfalls Pfad angeben: `.\install.ps1 -Python "C:\Pfad\zu\python.exe"` |
+| `Unable to copy … venvlauncher.exe … python.exe` (bis 1.11.0) | Ein Sender lief noch (z. B. offenes `--test`-Fenster). Harmlos – ab 1.11.1 beendet `install.ps1` solche Prozesse und verwendet die vorhandene Umgebung weiter |
+| `Connection interrupted while downloading` / `ConnectionResetError` bei pip | Firmen-Proxy bricht Downloads ab. Ab 1.11.1 aktualisiert sich pip nicht mehr selbst; sind die Pakete schon installiert, läuft die Installation mit einem Hinweis weiter. Für eine Erstinstallation Proxy setzen (Abschnitt 4) |
+| Umlaute falsch (`unverÃ¤ndert`) | Nur Anzeige; ab 1.11.1 behoben |
 | „Paketinstallation fehlgeschlagen“ | Proxy setzen (Abschnitt 4). Bei `CERTIFICATE_VERIFY_FAILED` prüft die Firma SSL-Verbindungen → IT fragen, ob `pypi.org` und `files.pythonhosted.org` freigegeben werden können |
 | Pi taucht beim Koppeln nicht auf | Am Pi `discoverable on`; am PC „Bluetooth-Geräteerkennung: Erweitert“ (Abschnitt 6.2); Abstand verringern |
 | Kopplung schlägt fehl | Am PC den Pi entfernen, am Pi `bluetoothctl remove <PC-Adresse>`, Abschnitt 6 wiederholen |

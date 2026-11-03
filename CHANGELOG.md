@@ -4,6 +4,11 @@ Alle wesentlichen Änderungen am InfoDisplay. Format nach [Keep a Changelog](htt
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 Neue Einträge werden mit `python tools/bump_version.py` automatisch erzeugt.
 
+## [1.11.1] – 2026-11-03
+
+### Behoben
+- Windows-Installation: Python-Launcher py wird wieder richtig erkannt; laufende Sender aus der Umgebung werden vor dem Update beendet; vorhandene Python-Umgebung wird weiterverwendet; kein Selbst-Update von pip mehr (scheiterte am Firmen-Proxy), vorhandene Pakete genügen; Umlaute in PowerShell 5 korrekt (UTF-8 mit BOM)
+
 ## [1.11.0] – 2026-11-03
 
 ### Hinzugefügt
