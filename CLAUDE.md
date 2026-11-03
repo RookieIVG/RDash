@@ -19,8 +19,8 @@ Vollständige Anleitung: `README.md`.
   Grautöne daher als halbtransparentes Weiß (`--text-muted`, `--line` …), damit sie auf Farbe passen.
   Ab 1.11.0: farbige Status-Punkte bei der Anwesenheit (grün/blau/grau/orange wie in der Zeiterfassung)
 - Keine echten Personendaten (Namen, Personalnummern) ins Repository – Tests/Beispiele nur mit erfundenen Personen
-- Layouts: Querformat 1920×1080, Hochformat 1080×1920 in Dritteln (oben Uhr/Datum/Wetter, Mitte Anwesenheit +
-  Schlagzeilen bzw. Termine, unten Musik) und Mobilgeräte; ohne Verbindung in allen Formaten nur Uhr und Datum als Bildschirmschoner
+- Layouts: Querformat 1920×1080, Hochformat 1080×1920 in zwei Hälften (oben Uhr/Datum/Wetter groß, unten
+  Anwesenheit + Musik; Schlagzeilen/Termine im Hochformat ausgeblendet) und Mobilgeräte; ohne Verbindung in allen Formaten nur Uhr und Datum als Bildschirmschoner
   (wandert und prallt an den Rändern ab)
 - Nutzer-relevante Änderungen (Bedienung, Installation, Update, Fehlersuche) immer auch im README nachziehen
 - Icons: Bootstrap Icons (lokal unter `web/assets/vendor/bootstrap-icons/`), Wetter: animierte Meteocons (MIT, lokal

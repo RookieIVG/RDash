@@ -299,11 +299,11 @@ lokal eingebunden, keine Internetverbindung nötig. Schrift: Systemschrift des P
 | Format | Anordnung |
 |---|---|
 | Querformat (1920×1080) | Musik links, Uhr/Datum/Wetter und Termine bzw. Schlagzeilen rechts (`[ui] focus`), Leiste unten |
-| Hochformat (1080×1920) | drei gleich hohe Bereiche: **oben** Uhr, Datum, Wetter · **Mitte** Anwesenheit (falls eingerichtet) und Schlagzeilen (gibt es keine: Termine), darunter der nächste Termin als Leiste · **unten** Musik |
+| Hochformat (1080×1920) | zwei Hälften: **oben** Uhr, Datum und Wetter (groß) · **unten** Mitarbeiter-Anwesenheit (falls eingerichtet) und Musik. Schlagzeilen und Termine werden im Hochformat nicht angezeigt |
 | Keine Verbindung zum PC | **Bildschirmschoner:** nur Uhr und Datum, sie wandern langsam schräg über den Bildschirm und prallt an den Rändern ab (Tempo: `[ui] saver_speed`) – in beiden Formaten |
 | Keine Termine / kein Kalender | Der Terminbereich wird ganz ausgeblendet (keine Meldung) |
 | Hintergrund | Musik mit Cover: dunkler Farbverlauf passend zum Cover · sonst schwarz |
-| Anwesenheit (optional) | Liste ausgewählter Personen aus der SAP-Zeiterfassung mit farbiger Markierung – Hochformat: in der Mitte über den Schlagzeilen, Querformat: rechts unter Uhr/Wetter (siehe unten) |
+| Anwesenheit (optional) | Liste ausgewählter Personen aus der SAP-Zeiterfassung mit farbiger Markierung – Name mit farbigem Status-Abzeichen wie in der Zeiterfassung – Hochformat: untere Hälfte über der Musik, Querformat: rechts unter Uhr/Wetter (siehe unten) |
 
 ### Wetter und Schlagzeilen
 
@@ -340,7 +340,7 @@ Wetter und Schlagzeilen werden alle 15 Minuten aktualisiert und nur angezeigt, s
 
 #### Kalender oder Schlagzeilen groß? (`[ui] focus` am Pi, nur Querformat)
 
-Im Hochformat ist die Aufteilung fest (Mitte = Schlagzeilen, sonst Termine); `focus` gilt nur im Querformat.
+Im Hochformat werden Schlagzeilen und Termine nicht angezeigt; `focus` gilt nur im Querformat.
 
 | `focus` | Großer Bereich | Leiste unten |
 |---|---|---|

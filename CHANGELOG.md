@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen am InfoDisplay. Format nach [Keep a Changelog](htt
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 Neue Einträge werden mit `python tools/bump_version.py` automatisch erzeugt.
 
+## [1.12.0] – 2026-11-03
+
+### Geändert
+- Hochformat in zwei Hälften: oben Uhr, Datum und Wetter (deutlich größer), unten Mitarbeiter-Anwesenheit und Musik; Schlagzeilen und Termine werden im Hochformat nicht mehr angezeigt
+- Anwesenheit im Stil der Zeiterfassung: Zeile mit Name und farbigem Status-Abzeichen (grün anwesend, blau Telearbeit, grau nicht anwesend, orange ganztägig abwesend), größer
+
 ## [1.11.1] – 2026-11-03
 
 ### Behoben
