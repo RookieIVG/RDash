@@ -54,6 +54,18 @@ _DEFAULTS = {
         "with_text": "true",
         "refresh_minutes": "15",
     },
+    "attendance": {
+        "enabled": "false",
+        "service_url": "https://fiori.kages.at:44310/sap/opu/odata/sap/ZKAG_HCM_ATTENDANCE_SRV",
+        "persons": "",
+        "auth": "cert",
+        "cert": "",
+        "name_format": "vorname_nachname",
+        "user": "",
+        "password": "",
+        "sap_client": "",
+        "refresh_minutes": "2",
+    },
     "internet": {
         "proxy": "",
         "timeout": "15",
@@ -104,6 +116,18 @@ class SenderConfig:
     max_headlines: int = 10
     news_text: bool = True
     news_refresh_minutes: float = 15
+    att_enabled: bool = False
+    att_service_url: str = ""
+    att_persons: list = field(default_factory=list)
+    att_auth: str = "cert"
+    att_cert: str = ""
+    att_name_format: str = "vorname_nachname"
+    att_user: str = ""
+    att_password: str = ""
+    att_sap_client: str = ""
+    att_refresh_minutes: float = 2
+    att_names: dict = field(default_factory=dict)
+    att_rules: list = field(default_factory=list)
     proxy: str = ""
     web_timeout: float = 15
     strict_tls: bool = False
@@ -111,6 +135,19 @@ class SenderConfig:
     log_level: str = "INFO"
     log_max_bytes: int = 2_000_000
     log_backup_count: int = 5
+
+
+def _status_rules(cp):
+    """[attendance_status] Textteil = Kategorie – eigene Regeln zuerst, danach die Standardregeln."""
+    from .attendance import CATEGORIES, DEFAULT_RULES
+    own = []
+    if cp.has_section("attendance_status"):
+        for fragment, category in cp.items("attendance_status", raw=True):
+            category = category.strip().lower()
+            if category not in CATEGORIES:
+                raise ValueError(f"[attendance_status] {fragment}: Kategorie muss eine von {', '.join(CATEGORIES)} sein")
+            own.append((fragment.strip().lower(), category))
+    return own + DEFAULT_RULES
 
 
 def _split_list(value):
@@ -162,6 +199,19 @@ def load_config(path=None, require_link=True):
         max_headlines=max(1, min(30, cp.getint("news", "max_headlines"))),
         news_text=cp.getboolean("news", "with_text"),
         news_refresh_minutes=max(5.0, cp.getfloat("news", "refresh_minutes")),
+        att_enabled=cp.getboolean("attendance", "enabled"),
+        att_service_url=cp.get("attendance", "service_url").strip(),
+        att_persons=[p.strip() for p in cp.get("attendance", "persons").replace("\n", ",").split(",") if p.strip()][:10],
+        att_auth=cp.get("attendance", "auth").strip().lower(),
+        att_cert=cp.get("attendance", "cert").strip(),
+        att_name_format=cp.get("attendance", "name_format").strip().lower(),
+        att_user=cp.get("attendance", "user").strip(),
+        att_password=cp.get("attendance", "password"),
+        att_sap_client=cp.get("attendance", "sap_client").strip(),
+        att_refresh_minutes=max(1.0, cp.getfloat("attendance", "refresh_minutes")),
+        att_names={k.strip().zfill(8): v.strip()[:60] for k, v in (cp.items("attendance_names", raw=True)
+                   if cp.has_section("attendance_names") else [])},
+        att_rules=_status_rules(cp),
         proxy=cp.get("internet", "proxy").strip(),
         web_timeout=max(3.0, cp.getfloat("internet", "timeout")),
         strict_tls=cp.getboolean("internet", "strict_tls"),
@@ -171,6 +221,12 @@ def load_config(path=None, require_link=True):
         log_backup_count=cp.getint("logging", "backup_count"),
     )
 
+    if cfg.att_enabled and cfg.att_auth not in ("cert", "sso", "basic", "none"):
+        raise ValueError("attendance.auth muss cert, sso, basic oder none sein")
+    if cfg.att_enabled and cfg.att_auth == "cert" and not cfg.att_cert:
+        raise ValueError("attendance.cert fehlt – Teil des Zertifikat-Inhabers eintragen (siehe README)")
+    if cfg.att_name_format not in ("vorname_nachname", "vorname", "sap"):
+        raise ValueError("attendance.name_format muss vorname_nachname, vorname oder sap sein")
     if not (-90 <= cfg.latitude <= 90 and -180 <= cfg.longitude <= 180):
         raise ValueError("weather.latitude/longitude ungültig")
     if not require_link:

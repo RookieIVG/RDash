@@ -299,10 +299,11 @@ lokal eingebunden, keine Internetverbindung nötig. Schrift: Systemschrift des P
 | Format | Anordnung |
 |---|---|
 | Querformat (1920×1080) | Musik links, Uhr/Datum/Wetter und Termine bzw. Schlagzeilen rechts (`[ui] focus`), Leiste unten |
-| Hochformat (1080×1920) | drei gleich hohe Bereiche: **oben** Uhr, Datum, Wetter · **Mitte** Schlagzeilen (gibt es keine: Termine), darunter der nächste Termin als Leiste · **unten** Musik |
+| Hochformat (1080×1920) | drei gleich hohe Bereiche: **oben** Uhr, Datum, Wetter · **Mitte** Anwesenheit (falls eingerichtet) und Schlagzeilen (gibt es keine: Termine), darunter der nächste Termin als Leiste · **unten** Musik |
 | Keine Verbindung zum PC | **Bildschirmschoner:** nur Uhr und Datum, sie wandern langsam schräg über den Bildschirm und prallt an den Rändern ab (Tempo: `[ui] saver_speed`) – in beiden Formaten |
 | Keine Termine / kein Kalender | Der Terminbereich wird ganz ausgeblendet (keine Meldung) |
 | Hintergrund | Musik mit Cover: dunkler Farbverlauf passend zum Cover · sonst schwarz |
+| Anwesenheit (optional) | Liste ausgewählter Personen aus der SAP-Zeiterfassung mit farbiger Markierung – Hochformat: in der Mitte über den Schlagzeilen, Querformat: rechts unter Uhr/Wetter (siehe unten) |
 
 ### Wetter und Schlagzeilen
 
@@ -363,6 +364,59 @@ Den Kurztext liefert der Feed (RSS: `description`, Atom: `summary`/`content`). A
 **Feed-Adressen finden:** Viele Nachrichtenseiten nennen ihren RSS-Feed im Seitenfuß („RSS“). Beispiele:
 `https://rss.orf.at/news.xml` (ORF News), `https://rss.orf.at/steiermark.xml` (ORF Steiermark),
 `https://www.derstandard.at/rss` (Der Standard). Nur `http`/`https` ist erlaubt.
+
+### Anwesenheit aus der SAP-Zeiterfassung
+
+Zeigt den Status einiger Personen – wie in der Zeiterfassung:
+
+| Markierung | Status in SAP | Anzeige |
+|---|---|---|
+| 🟢 grün | `anwesend` | Anwesend |
+| 🔵 blau | `Telearbeit` | Telearbeit |
+| ⚪ grau | `nicht anwesend` | Nicht anwesend |
+| 🟠 orange | `ganzt. abw.` (mit Enddatum) | Ganztägig abwesend bis 13.11. |
+
+Wie Wetter und Schlagzeilen holt der **PC** die Daten (aus dem SAP-OData-Dienst `ZKAG_HCM_ATTENDANCE_SRV`, im
+Firmennetz) und schickt nur Name, Status und Farbe per Bluetooth an den Pi. Eingestellt wird alles am PC in
+`%APPDATA%\InfoDisplay\config.ini`:
+
+```ini
+[attendance]
+enabled  = true
+persons  = 00123456, 00234567, 00345678   ; Personalnummern, Reihenfolge wie angezeigt (max. 10)
+auth     = cert                             ; Anmeldung mit dem Benutzerzertifikat – wie der Browser
+cert     = Mustermann                       ; Teil des Zertifikat-Inhabers (siehe unten)
+name_format = vorname_nachname              ; "Max Mustermann" | vorname: "Max" | sap: "Mustermann Max"
+
+[attendance_names]                          ; optional: eigene Anzeigenamen
+00123456 = Max
+```
+
+**Zertifikat finden:** Die Anmeldung läuft über WinHTTP mit dem Benutzerzertifikat aus dem Windows-Zertifikatsspeicher
+(der private Schlüssel bleibt dort, nichts wird exportiert, kein Passwort in der Config). Welche Zertifikate es gibt:
+```powershell
+Get-ChildItem Cert:\CurrentUser\My | Format-List Subject, Issuer, NotAfter
+```
+Bei `cert` einen eindeutigen Teil des `Subject` eintragen (z. B. den Nachnamen). Alternativen: `auth = sso`
+(Windows-Anmeldung/Kerberos), `basic` (Benutzer/Passwort) oder `none`.
+
+**Personalnummern finden:** Die Adresse
+`https://fiori.kages.at:44310/sap/opu/odata/sap/ZKAG_HCM_ATTENDANCE_SRV/AttendanceStatusSet` im Browser öffnen –
+jede Person steht dort mit `<d:Pernr>` und `<d:Ename>`.
+
+**Prüfen:** `sender.py --test` zeigt unter `ANWESENHEIT` die Liste so, wie sie angezeigt wird. Aktualisiert wird
+alle `refresh_minutes` (2), gesendet nur bei Änderungen.
+
+**Eigene Zuordnung** (falls SAP andere Texte liefert) – Teil des Statustexts = Kategorie (`anwesend`, `telearbeit`,
+`nicht_anwesend`, `ganztaegig`), eigene Regeln haben Vorrang:
+```ini
+[attendance_status]
+dienstreise = ganztaegig
+```
+
+> **Datenschutz:** Der Monitor ist für andere sichtbar. Nur Personen anzeigen, die einverstanden sind – und klären,
+> ob Datenschutz bzw. Betriebsrat einbezogen werden müssen (z. B. kann „ganztägig abwesend“ auf Krankenstand
+> hindeuten). Der Pi speichert die Liste nur im Arbeitsspeicher und zeigt sie nur, solange der PC verbunden ist.
 
 ### Hochformat einrichten
 
@@ -432,6 +486,14 @@ Nach Änderungen: `sudo systemctl restart infodisplay` (ohne SSH-Zugang: Abschni
 | news | `with_text` | true | Kurztext der Meldung mitsenden (sichtbar bei `focus = news`) |
 | internet | `proxy` / `timeout` | leer / 15 | Proxy (leer = Windows-Einstellung), Zeitlimit je Abruf |
 | internet | `strict_tls` | false | `true` = zusätzlich strenge Zertifikatsprüfung von Python 3.13 (scheitert an Firmen-Firewalls) |
+| attendance | `enabled` | false | Anwesenheit aus SAP anzeigen (Abschnitt 7) |
+| attendance | `service_url` | `https://fiori.kages.at:44310/…/ZKAG_HCM_ATTENDANCE_SRV` | OData-Dienst |
+| attendance | `persons` | leer | Personalnummern, kommagetrennt (max. 10) |
+| attendance | `auth` / `cert` | cert / leer | Anmeldung: `cert` (Benutzerzertifikat, `cert` = Teil des Inhabers), `sso`, `basic` (`user`/`password`), `none` |
+| attendance | `name_format` | vorname_nachname | `vorname_nachname`, `vorname` oder `sap` |
+| attendance | `sap_client` / `refresh_minutes` | leer / 2 | SAP-Mandant (falls nötig), Aktualisierung |
+| attendance_names | `<Pernr>` | – | eigener Anzeigename |
+| attendance_status | `<Textteil>` | – | eigene Zuordnung Statustext → Kategorie |
 | logging | `file` / `level` | `%LOCALAPPDATA%\InfoDisplay\logs\sender.log` / INFO | Zentrales Log |
 
 Nach Änderungen: Aufgabe neu starten
@@ -692,6 +754,7 @@ ssh admin@RDash.local
 | Eingabeprüfung | Max. Nachrichtengröße, Typ-/Längenprüfung, Steuerzeichen entfernt, Cover nur JPEG/PNG (Magic Bytes) |
 | Ausgabe | Anzeige setzt Texte nur per `textContent` (kein HTML), strikte Content-Security-Policy |
 | Internet | Nur der PC greift aufs Internet zu (Wetter/Feeds, nur `http`/`https`, max. 2 MB, Zeitlimit, XML ohne externe Entitäten/Entity-Bomben). Zertifikate werden immer geprüft (Kette bis zu einer vertrauenswürdigen Stelle im Windows-Zertifikatsspeicher, Servername). Der Pi bleibt offline und prüft auch diese Daten (Typ, Länge, Wertebereich) |
+| Anwesenheit (SAP) | Anmeldung mit dem Benutzerzertifikat über WinHTTP – privater Schlüssel bleibt im Windows-Zertifikatsspeicher, kein Passwort in der Config. Übertragen werden nur Anzeigename, Status, Kategorie und „bis“-Datum der eingestellten Personen (max. 10); der Pi hält sie nur im Arbeitsspeicher |
 | Webserver | Nur `127.0.0.1`, nur lesende GET-Endpunkte, Pfadprüfung gegen Directory Traversal, Security-Header |
 | Konfiguration | Zugangsdaten außerhalb des Web-Roots: `/etc/infodisplay` (640) bzw. `%APPDATA%` (nur Benutzer) |
 | Dienst | Eigener Systembenutzer ohne Login, systemd-Härtung (`ProtectSystem=strict`, `NoNewPrivileges`, …); einzige Sonderberechtigung `CAP_SYS_TIME` (Uhr stellen, nur mit Zeitstempeln angemeldeter Sender, nur Werte ab 2024) |
@@ -717,6 +780,9 @@ Browser, keine schreibenden Endpunkte). Die Bluetooth-Verbindung ist durch die K
 | Kopplung schlägt fehl | Auf dem Pi `bluetoothctl` → `remove <PC-MAC>`, in Windows Gerät entfernen, Schritt 4 wiederholen |
 | Hochformat-Bild verdreht oder nicht gedreht | `rotation` auf `270` statt `90` setzen; Ausgangsname prüfen: `wlr-randr` in einem Terminal am Pi-Desktop |
 | Popup „Übersetzen? Deutsch / Englisch“ oben rechts | Ab 1.2.2 abgeschaltet: Update einspielen (Abschnitt 9) und Pi neu starten. Prüfen: `cat /etc/chromium/policies/managed/infodisplay.json` |
+| `ANWESENHEIT: null` / „Anwesenheit nicht abrufbar“ | Meldung im Log lesen: „Server verlangt ein Benutzerzertifikat“ bzw. „Kein passendes Benutzerzertifikat“ → `[attendance] cert` mit einem Teil des `Subject` aus `Get-ChildItem Cert:\CurrentUser\My` füllen. „Servername nicht gefunden“ → Firmennetz/VPN. „403“ → keine Berechtigung für den Dienst |
+| Person fehlt in der Anwesenheitsliste | Personalnummer prüfen (8 Stellen, führende Nullen dürfen fehlen); Log: „Personalnummer … nicht gefunden“ |
+| Falsche Farbe | SAP liefert einen anderen Statustext → Zuordnung in `[attendance_status]` ergänzen |
 | `CERTIFICATE_VERIFY_FAILED … Missing Authority Key Identifier` | Firmen-Firewall prüft verschlüsselte Verbindungen (TLS-Inspection); ihre Zertifikate erfüllen die strenge Zusatzprüfung von Python 3.13 nicht. Ab Version 1.10.2 behoben (`[internet] strict_tls = false`, Standard) – Sender aktualisieren |
 | `CERTIFICATE_VERIFY_FAILED … unable to get local issuer certificate` | Die Zertifizierungsstelle der Firma fehlt im Windows-Zertifikatsspeicher des PCs → IT fragen. Zertifikatsprüfung **nicht** abschalten |
 | Kein Wetter / keine Schlagzeilen | Am PC `sender.py --test` ausführen: Fehlermeldungen zeigen, ob Proxy (`[internet] proxy`) oder Feed-Adresse falsch ist. Sender-Log auf „Feed nicht lesbar“ / „Wetter nicht abrufbar“ prüfen. Pi und PC müssen ab Version 1.4.0 laufen |
@@ -768,6 +834,7 @@ Eine JSON-Nachricht pro Zeile (UTF-8, abgeschlossen mit `\n`), Protokollversion 
 | PC → Pi | `calendar` | `events[]` mit `subject`, `location`, `start`, `end` (lokal, `YYYY-MM-DDTHH:MM`), `all_day` |
 | PC → Pi | `weather` | `place`, `temp`, `code` (WMO-Wettercode), `is_day`, `t_max`, `t_min` – optional, alle 15 min |
 | PC → Pi | `news` | `items[]` mit `title`, `source`, `text` (Kurztext, optional) – max. 30, alle 15 min |
+| PC → Pi | `attendance` | `items[]` mit `name`, `status`, `category` (`anwesend`, `telearbeit`, `nicht_anwesend`, `ganztaegig`), `until` (`YYYY-MM-DD` oder leer) – max. 10, nur bei Änderung |
 | PC → Pi | `ping` | Lebenszeichen alle 20 s |
 | PC → Pi | `bye` | Sender beendet sich |
 

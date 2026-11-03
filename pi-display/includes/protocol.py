@@ -15,6 +15,9 @@ MAX_TEXT = 300
 MAX_EVENTS = 50
 MAX_COVER_BYTES = 2 * 1024 * 1024
 MAX_HEADLINES = 30
+MAX_PERSONS = 10
+ATTENDANCE_CATEGORIES = {"anwesend", "telearbeit", "nicht_anwesend", "ganztaegig"}
+_ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _ISO_LOCAL = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$")
 _HEX_ID = re.compile(r"^[0-9a-f]{8,64}$")
 _B64_PART = re.compile(r"^[A-Za-z0-9+/=]*$")
@@ -137,6 +140,28 @@ def parse_news(data):
         if title:
             items.append({"title": title, "source": clean_text(item.get("source"), 40),
                           "text": clean_text(item.get("text"), 400)})
+    return items
+
+
+def parse_attendance(data):
+    """Anwesenheitsliste: Name, Status, Kategorie (bestimmt die Farbe), optional „bis“-Datum."""
+    if not isinstance(data, dict) or not isinstance(data.get("items"), list):
+        raise ProtocolError("attendance.items fehlt")
+    items = []
+    for item in data["items"][:MAX_PERSONS]:
+        if not isinstance(item, dict):
+            continue
+        name = clean_text(item.get("name"), 60)
+        if not name:
+            continue
+        category = item.get("category")
+        until = item.get("until")
+        items.append({
+            "name": name,
+            "status": clean_text(item.get("status"), 40),
+            "category": category if category in ATTENDANCE_CATEGORIES else "nicht_anwesend",
+            "until": until if isinstance(until, str) and _ISO_DATE.match(until) else "",
+        })
     return items
 
 

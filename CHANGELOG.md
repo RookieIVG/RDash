@@ -4,6 +4,16 @@ Alle wesentlichen Änderungen am InfoDisplay. Format nach [Keep a Changelog](htt
 Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 Neue Einträge werden mit `python tools/bump_version.py` automatisch erzeugt.
 
+## [1.11.0] – 2026-11-03
+
+### Hinzugefügt
+- Anwesenheit aus der SAP-Zeiterfassung (OData ZKAG_HCM_ATTENDANCE_SRV): Liste ausgewählter Personen mit farbiger Markierung (grün anwesend, blau Telearbeit, grau nicht anwesend, orange ganztägig abwesend inkl. „bis“-Datum) – Hochformat in der Mitte, Querformat rechts unter Uhr/Wetter
+- Einstellungen am PC ([attendance], [attendance_names], [attendance_status]); Anmeldung mit dem Benutzerzertifikat aus Windows über WinHTTP (alternativ SSO, Basic, ohne)
+- Protokoll: neue Nachricht attendance (nur bei Änderung); Testsender mit Beispiel-Anwesenheit (--no-attendance)
+
+### Behoben
+- Mobilansicht: Layout wird durch lange, nicht umbrechende Texte nicht mehr breiter als der Bildschirm
+
 ## [1.10.2] – 2026-10-28
 
 ### Behoben

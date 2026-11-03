@@ -62,6 +62,7 @@ def main():
     parser.add_argument("--seconds", type=int, default=30, help="Wie lange Daten gesendet werden")
     parser.add_argument("--no-calendar", action="store_true", help="Keine Kalenderdaten senden (wie ohne Outlook)")
     parser.add_argument("--no-web", action="store_true", help="Kein Wetter und keine Schlagzeilen senden")
+    parser.add_argument("--no-attendance", action="store_true", help="Keine Anwesenheitsliste senden")
     parser.add_argument("--cover", choices=list(COVERS) + ["keins"], default="gruen", help="Farbe des Testcovers")
     args = parser.parse_args()
 
@@ -113,6 +114,14 @@ def main():
              "text": "Noch ein Beschreibungstext, damit die Großansicht weiterblättern muss."},
             {"title": "Sechste Schlagzeile", "source": "Andere Quelle", "text": "Text sechs."},
             {"title": "Siebte Schlagzeile", "source": "Testquelle", "text": "Text sieben mit etwas mehr Inhalt."},
+        ]}})
+
+    if not args.no_attendance:
+        send(sock, {"type": "attendance", "data": {"items": [
+            {"name": "Max Mustermann", "status": "Anwesend", "category": "anwesend", "until": ""},
+            {"name": "Erika Beispiel", "status": "Telearbeit", "category": "telearbeit", "until": ""},
+            {"name": "Paul Probe", "status": "Nicht anwesend", "category": "nicht_anwesend", "until": ""},
+            {"name": "Anna Test", "status": "Ganztägig abwesend", "category": "ganztaegig", "until": "2026-11-13"},
         ]}})
 
     duration = 214_000

@@ -25,6 +25,7 @@ class DisplayState:
         self._calendar_received_ms = None
         self._weather = None
         self._news = None
+        self._attendance = None
         self._link = {"connected": False, "client": None, "address": None,
                       "since_ms": None, "last_message_ms": None}
 
@@ -81,6 +82,12 @@ class DisplayState:
             self._link["last_message_ms"] = self._news["received_ms"]
             self._changed()
 
+    def set_attendance(self, items):
+        with self._cond:
+            self._attendance = {"items": list(items), "received_ms": now_ms()}
+            self._link["last_message_ms"] = self._attendance["received_ms"]
+            self._changed()
+
     # ------------------------------------------------------------ Lesen
     def get_cover(self):
         with self._cond:
@@ -106,6 +113,8 @@ class DisplayState:
                 "weather": dict(self._weather) if self._weather else None,
                 "news": {"items": list(self._news["items"]), "received_ms": self._news["received_ms"]}
                         if self._news else None,
+                "attendance": {"items": list(self._attendance["items"]), "received_ms": self._attendance["received_ms"]}
+                              if self._attendance else None,
             }
 
     def wait_for_change(self, since_version, timeout):
